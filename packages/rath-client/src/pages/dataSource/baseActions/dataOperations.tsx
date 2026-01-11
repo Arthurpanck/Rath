@@ -65,36 +65,37 @@ const DataOperations: React.FC = () => {
                     })),
                 },
             },
-            {
-                key: 'export',
-                text: intl.get('dataSource.downloadData.title'),
-                iconProps: { iconName: 'download' },
-                subMenuProps: {
-                    items: [
-                        {
-                            key: 'downloadCSV',
-                            text: intl.get('dataSource.downloadData.downloadCSV'),
-                            onClick: exportDataAsCSV,
-                        },
-                        {
-                            key: 'downloadJSON',
-                            text: intl.get('dataSource.downloadData.downloadJSON'),
-                            onClick: exportDataAsJson,
-                        },
-                        {
-                            key: 'downloadJSONMeta',
-                            text: intl.get('dataSource.downloadData.downloadJSONMeta'),
-                            onClick: exportDataset,
-                        },
-                        {
-                            key: 'downloadRATHDS',
-                            text: intl.get('dataSource.downloadData.downloadRATHDS'),
-                            onClick: exportDataAsRATHDS,
-                        },
-                    ],
-                },
-                disabled: mutFields.length === 0,
-            },
+            // HIDDEN: Export data menu
+            // {
+            //     key: 'export',
+            //     text: intl.get('dataSource.downloadData.title'),
+            //     iconProps: { iconName: 'download' },
+            //     subMenuProps: {
+            //         items: [
+            //             {
+            //                 key: 'downloadCSV',
+            //                 text: intl.get('dataSource.downloadData.downloadCSV'),
+            //                 onClick: exportDataAsCSV,
+            //             },
+            //             {
+            //                 key: 'downloadJSON',
+            //                 text: intl.get('dataSource.downloadData.downloadJSON'),
+            //                 onClick: exportDataAsJson,
+            //             },
+            //             {
+            //                 key: 'downloadJSONMeta',
+            //                 text: intl.get('dataSource.downloadData.downloadJSONMeta'),
+            //                 onClick: exportDataset,
+            //             },
+            //             {
+            //                 key: 'downloadRATHDS',
+            //                 text: intl.get('dataSource.downloadData.downloadRATHDS'),
+            //                 onClick: exportDataAsRATHDS,
+            //             },
+            //         ],
+            //     },
+            //     disabled: mutFields.length === 0,
+            // },
             {
                 key: 'fastSelection',
                 text: intl.get('dataSource.fastSelection.title'),
