@@ -58,10 +58,14 @@ function App() {
                     {appKey === PIVOT_KEYS.megaAuto && <LTSPage />}
                     {appKey === PIVOT_KEYS.semiAuto && <PatternPage />}
                     {appKey === PIVOT_KEYS.painter && <Painter />}
-                    {appKey === PIVOT_KEYS.dashBoardDesigner && <ProgressiveDashboard />}
-                    {appKey === PIVOT_KEYS.collection && <Collection />}
-                    {appKey === PIVOT_KEYS.dashboard && <Dashboard />}
-                    {appKey === PIVOT_KEYS.causal && <CausalPage />}
+                    {/* HIDDEN: Dashboard Designer page */}
+                    {/* {appKey === PIVOT_KEYS.dashBoardDesigner && <ProgressiveDashboard />} */}
+                    {/* HIDDEN: Collection page */}
+                    {/* {appKey === PIVOT_KEYS.collection && <Collection />} */}
+                    {/* HIDDEN: Dashboard page */}
+                    {/* {appKey === PIVOT_KEYS.dashboard && <Dashboard />} */}
+                    {/* HIDDEN: Causal page */}
+                    {/* {appKey === PIVOT_KEYS.causal && <CausalPage />} */}
                     {appKey === PIVOT_KEYS.connection && <DataConnection />}
                     <CrInfo />
                 </div>

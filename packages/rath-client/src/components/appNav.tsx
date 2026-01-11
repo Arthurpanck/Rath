@@ -165,35 +165,38 @@ const AppNav: React.FC<AppNavProps> = (props) => {
                         PIVOT_KEYS.painter,
                     ]),
                 },
-                ...getLinks([
-                    PIVOT_KEYS.collection,
-                    PIVOT_KEYS.dashboard,
-                ]),
-                {
-                    url: '#dev-mode',
-                    key: intl.get('menu.devCollection'),
-                    name: navMode === 'text' ? intl.get('menu.devCollection') : '',
-                    isExpanded: altKeyPressed,
-                    forceAnchor: true,
-                    onClick(e: any) {
-                        e.preventDefault();
-                    },
-                    links: getLinks([
-                        // PIVOT_KEYS.noteBook,
-                        // PIVOT_KEYS.gallery,
-                        // PIVOT_KEYS.explainer,
-                        // PIVOT_KEYS.dashBoard,
-                        PIVOT_KEYS.causal,
-                        PIVOT_KEYS.dashBoardDesigner,
-                    ]),
-                },
+                // HIDDEN: Collection and Dashboard pages
+                // ...getLinks([
+                //     PIVOT_KEYS.collection,
+                //     PIVOT_KEYS.dashboard,
+                // ]),
+                // HIDDEN: Insiders section (Causal and Dashboard Designer)
+                // {
+                //     url: '#dev-mode',
+                //     key: intl.get('menu.devCollection'),
+                //     name: navMode === 'text' ? intl.get('menu.devCollection') : '',
+                //     isExpanded: altKeyPressed,
+                //     forceAnchor: true,
+                //     onClick(e: any) {
+                //         e.preventDefault();
+                //     },
+                //     links: getLinks([
+                //         // PIVOT_KEYS.noteBook,
+                //         // PIVOT_KEYS.gallery,
+                //         // PIVOT_KEYS.explainer,
+                //         // PIVOT_KEYS.dashBoard,
+                //         PIVOT_KEYS.causal,
+                //         PIVOT_KEYS.dashBoardDesigner,
+                //     ]),
+                // },
+                // HIDDEN: Support link
                 // ...getLinks([PIVOT_KEYS.support]),
-                {
-                    key: 'support',
-                    name: intl.get('menu.support'),
-                    url: 'https://docs.kanaries.net',
-                    target: '_blank',
-                }
+                // {
+                //     key: 'support',
+                //     name: intl.get('menu.support'),
+                //     url: 'https://docs.kanaries.net',
+                //     target: '_blank',
+                // }
             ],
         },
     ];
