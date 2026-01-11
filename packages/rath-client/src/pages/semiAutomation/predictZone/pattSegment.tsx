@@ -45,13 +45,14 @@ const PattSegment: React.FC = () => {
                                 semiAutoStore.updateMainView(pattViews.views[i])
                             }}
                         />
-                        <CommandButton
+                        {/* HIDDEN: Star button */}
+                        {/* <CommandButton
                             iconProps={{ iconName: collectionStore.collectionContains(pattViews.views[i].fields, spec, IVisSpecType.vegaSubset, pattViews.views[i].filters) ? 'FavoriteStarFill' : 'FavoriteStar' }}
                             text={intl.get('common.star')}
                             onClick={() => {
                                 collectionStore.toggleCollectState(pattViews.views[i].fields, spec, IVisSpecType.vegaSubset, pattViews.views[i].filters)
                             }}
-                        />
+                        /> */}
                         <CommandButton
                             text={intl.get('megaAuto.commandBar.editing')}
                             iconProps={{ iconName: 'BarChartVerticalEdit'}}

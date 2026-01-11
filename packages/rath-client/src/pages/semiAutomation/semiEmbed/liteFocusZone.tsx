@@ -58,7 +58,8 @@ const LiteFocusZone: React.FC = (props) => {
                         disabled={dataViewQuery === null}
                         onClick={paintChart}
                     />
-                    {dataViewQuery && spec && (
+                    {/* HIDDEN: Star button */}
+                    {/* {dataViewQuery && spec && (
                         <IconButton
                             style={BUTTON_STYLE}
                             iconProps={{
@@ -68,10 +69,10 @@ const LiteFocusZone: React.FC = (props) => {
                             }}
                             text={intl.get('common.star')}
                             onClick={() => {
-                                collectionStore.toggleCollectState(fieldMetas, spec, IVisSpecType.vegaSubset, dataViewQuery.filters); 
+                                collectionStore.toggleCollectState(fieldMetas, spec, IVisSpecType.vegaSubset, dataViewQuery.filters);
                             }}
                         />
-                    )}
+                    )} */}
                     <IconButton
                         style={BUTTON_STYLE}
                         iconProps={{ iconName: 'Settings' }}

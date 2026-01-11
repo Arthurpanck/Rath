@@ -27,14 +27,15 @@ const OperationBar: React.FC<OperationBarProps> = ({ handler }) => {
         }
     }, [mainView.spec, mainView.dataViewQuery, painterStore])
 
-    let starIconName = 'FavoriteStar';
-    if (mainView.dataViewQuery && mainView.spec) {
-        const viewFields = toJS(mainView.dataViewQuery.fields);
-        const viewSpec = toJS(mainView.spec);
-        if (collectionStore.collectionContains(viewFields, viewSpec, IVisSpecType.vegaSubset)) {
-            starIconName = 'FavoriteStarFill'
-        }
-    }
+    // HIDDEN: Star icon logic
+    // let starIconName = 'FavoriteStar';
+    // if (mainView.dataViewQuery && mainView.spec) {
+    //     const viewFields = toJS(mainView.dataViewQuery.fields);
+    //     const viewSpec = toJS(mainView.spec);
+    //     if (collectionStore.collectionContains(viewFields, viewSpec, IVisSpecType.vegaSubset)) {
+    //         starIconName = 'FavoriteStarFill'
+    //     }
+    // }
 
     const commandProps: ICommandBarItemProps[] = [
         {
@@ -89,16 +90,17 @@ const OperationBar: React.FC<OperationBarProps> = ({ handler }) => {
                 }
             }
         },
-        {
-            key: 'star',
-            text: intl.get('common.star'),
-            iconProps: { iconName: starIconName },
-            onClick: () => {
-                if (mainView.dataViewQuery && mainView.spec) {
-                    collectionStore.toggleCollectState(toJS(mainView.dataViewQuery.fields), toJS(mainView.spec), IVisSpecType.vegaSubset)
-                }
-            }
-        },
+        // HIDDEN: Star button
+        // {
+        //     key: 'star',
+        //     text: intl.get('common.star'),
+        //     iconProps: { iconName: starIconName },
+        //     onClick: () => {
+        //         if (mainView.dataViewQuery && mainView.spec) {
+        //             collectionStore.toggleCollectState(toJS(mainView.dataViewQuery.fields), toJS(mainView.spec), IVisSpecType.vegaSubset)
+        //         }
+        //     }
+        // },
         {
             key: 'constraints',
             text: intl.get('megaAuto.commandBar.constraints'),
@@ -108,14 +110,15 @@ const OperationBar: React.FC<OperationBarProps> = ({ handler }) => {
             },
             disabled: true
         },
-        {
-            key: 'download',
-            text: intl.get('megaAuto.commandBar.download'),
-            iconProps: { iconName: 'Download' },
-            onClick: () => {
-                handler.current?.exportImage();
-            },
-        },
+        // HIDDEN: Export/download button
+        // {
+        //     key: 'download',
+        //     text: intl.get('megaAuto.commandBar.download'),
+        //     iconProps: { iconName: 'Download' },
+        //     onClick: () => {
+        //         handler.current?.exportImage();
+        //     },
+        // },
     ]
 
     return <div style={{ position: 'relative', zIndex: 99}}>

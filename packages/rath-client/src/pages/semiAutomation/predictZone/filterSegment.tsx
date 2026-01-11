@@ -46,13 +46,14 @@ const FilterSegment: React.FC = () => {
                                 semiAutoStore.updateMainView(filterViews.views[i])
                             }}
                         />
-                        <CommandButton
+                        {/* HIDDEN: Star button */}
+                        {/* <CommandButton
                             iconProps={{ iconName: collectionStore.collectionContains(filterViews.views[i].fields, spec, IVisSpecType.vegaSubset, filterViews.views[i].filters) ? 'FavoriteStarFill' : 'FavoriteStar' }}
                             text={intl.get('common.star')}
                             onClick={() => {
                                 collectionStore.toggleCollectState(filterViews.views[i].fields, spec, IVisSpecType.vegaSubset, filterViews.views[i].filters)
                             }}
-                        />
+                        /> */}
                         <CommandButton
                             text={intl.get('megaAuto.commandBar.editing')}
                             iconProps={{ iconName: 'BarChartVerticalEdit'}}
