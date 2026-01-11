@@ -48,29 +48,30 @@ const FocusZone: React.FC = () => {
         return mainViewSpecSource === 'custom' ? muteSpec : spec;
     }, [spec, muteSpec, mainViewSpecSource]);
 
-    const ChartEditButtonProps = useMemo<IContextualMenuProps>(() => {
-        return {
-            items: [
-                {
-                    key: 'editingInGW',
-                    text: intl.get('megaAuto.commandBar.editInGW'),
-                    iconProps: { iconName: 'BarChartVerticalEdit' },
-                    onClick: editChart,
-                },
-                {
-                    key: 'editingInEditor',
-                    text: intl.get('megaAuto.commandBar.editInEditor'),
-                    iconProps: { iconName: 'Edit' },
-                    onClick: () => {
-                        if (spec) {
-                            editorStore.syncSpec(IVisSpecType.vegaSubset, spec);
-                            semiAutoStore.changeMainViewSpecSource();
-                        }
-                    },
-                },
-            ],
-        };
-    }, [editChart, editorStore, spec, semiAutoStore]);
+    // REMOVED: ChartEditButtonProps dropdown - now using direct button click
+    // const ChartEditButtonProps = useMemo<IContextualMenuProps>(() => {
+    //     return {
+    //         items: [
+    //             {
+    //                 key: 'editingInGW',
+    //                 text: intl.get('megaAuto.commandBar.editInGW'),
+    //                 iconProps: { iconName: 'BarChartVerticalEdit' },
+    //                 onClick: editChart,
+    //             },
+    //             {
+    //                 key: 'editingInEditor',
+    //                 text: intl.get('megaAuto.commandBar.editInEditor'),
+    //                 iconProps: { iconName: 'Edit' },
+    //                 onClick: () => {
+    //                     if (spec) {
+    //                         editorStore.syncSpec(IVisSpecType.vegaSubset, spec);
+    //                         semiAutoStore.changeMainViewSpecSource();
+    //                     }
+    //                 },
+    //             },
+    //         ],
+    //     };
+    // }, [editChart, editorStore, spec, semiAutoStore]);
 
     const handler = useRef<IReactVegaHandler>(null);
 
@@ -179,12 +180,18 @@ const FocusZone: React.FC = () => {
                 )}
             </div>
             <div className="action-buttons">
-                <CommandButton
+                {/* CHANGED: From dropdown CommandButton to direct ActionButton */}
+                <ActionButton
                     style={BUTTON_STYLE}
                     text={intl.get('megaAuto.commandBar.editing')}
                     iconProps={{ iconName: 'BarChartVerticalEdit' }}
                     disabled={dataViewQuery === null}
-                    menuProps={ChartEditButtonProps}
+                    onClick={() => {
+                        if (spec) {
+                            editorStore.syncSpec(IVisSpecType.vegaSubset, spec);
+                            semiAutoStore.changeMainViewSpecSource();
+                        }
+                    }}
                 />
                 <ActionButton
                     style={BUTTON_STYLE}
@@ -193,7 +200,8 @@ const FocusZone: React.FC = () => {
                     disabled={dataViewQuery === null}
                     onClick={paintChart}
                 />
-                {dataViewQuery && spec && (
+                {/* HIDDEN: Star button */}
+                {/* {dataViewQuery && spec && (
                     <ActionButton
                         style={BUTTON_STYLE}
                         iconProps={{
@@ -206,7 +214,7 @@ const FocusZone: React.FC = () => {
                                 collectionStore.toggleCollectState(fieldMetas, spec, IVisSpecType.vegaSubset, dataViewQuery.filters);
                         }}
                     />
-                )}
+                )} */}
                 <ActionButton
                     style={BUTTON_STYLE}
                     iconProps={{ iconName: 'Settings' }}
@@ -217,7 +225,8 @@ const FocusZone: React.FC = () => {
                         semiAutoStore.setShowSettings(true);
                     }}
                 />
-                <ActionButton
+                {/* HIDDEN: Export/download button */}
+                {/* <ActionButton
                     style={{ marginTop: BUTTON_STYLE.marginTop }}
                     iconProps={{ iconName: 'Download' }}
                     ariaLabel={intl.get('megaAuto.commandBar.download')}
@@ -227,7 +236,7 @@ const FocusZone: React.FC = () => {
                     onClick={() => {
                         handler.current?.exportImage();
                     }}
-                />
+                /> */}
             </div>
         </MainViewContainer>
     );
