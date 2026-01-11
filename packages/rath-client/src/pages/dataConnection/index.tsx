@@ -96,7 +96,8 @@ const DataConnection: React.FC<DataConnectionProps> = (props) => {
     return (
         <div className="content-container">
             <div>
-                {dsPageKey === DS_PAGE_KEYS.display && (
+                {/* HIDDEN: Create Datasource button */}
+                {/* {dsPageKey === DS_PAGE_KEYS.display && (
                     <Button
                         appearance="primary"
                         onClick={() => {
@@ -106,7 +107,7 @@ const DataConnection: React.FC<DataConnectionProps> = (props) => {
                     >
                         Create DataSource
                     </Button>
-                )}
+                )} */}
                 {dsPageKey === DS_PAGE_KEYS.create && (
                     <Button
                         appearance="primary"
