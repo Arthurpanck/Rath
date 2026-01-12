@@ -25,7 +25,8 @@ export function autoVis (props: AutoVisProps): IVegaSubset | null {
             interactive: mainVizSetting.interactive,
             stepSize: 32,
             excludeScaleZero: mainVizSetting.excludeScaleZero,
-            specifiedEncodes: mainViewQuery.encodes
+            specifiedEncodes: mainViewQuery.encodes,
+            showDataLabels: mainVizSetting.showDataLabels
         }), fieldMetas, 800, 500)
     } else {
         return adviceVisSize(labDistVis({
@@ -37,7 +38,8 @@ export function autoVis (props: AutoVisProps): IVegaSubset | null {
             stepSize: 32,
             dataSource,
             excludeScaleZero: mainVizSetting.excludeScaleZero,
-            specifiedEncodes: mainViewQuery.encodes
+            specifiedEncodes: mainViewQuery.encodes,
+            showDataLabels: mainVizSetting.showDataLabels
         }), fieldMetas, 800, 500)
     }
 }
