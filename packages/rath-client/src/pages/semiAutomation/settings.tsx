@@ -45,6 +45,19 @@ const PatternSetting: React.FC = () => {
         <Toggle checked={autoAsso.neighborViews} onText="Auto" offText="Manual" label="neighbors" onChange={(e, checked) => {
             semiAutoStore.updateAutoAssoConfig('neighborViews', Boolean(checked))
         }} />
+        <hr style={{ marginTop: '1em'}} />
+        <Label>Visualization Options</Label>
+        <Toggle
+            checked={semiAutoStore.mainVizSetting.showDataLabels || false}
+            onText="Show"
+            offText="Hide"
+            label="Data Labels"
+            onChange={(e, checked) => {
+                semiAutoStore.updateMainVizSettings(s => {
+                    s.showDataLabels = Boolean(checked);
+                });
+            }}
+        />
         <hr />
         <OperationBar />
     </Panel>
