@@ -125,7 +125,8 @@ const PreferencePanel: React.FC = () => {
                         }}
                     />
                 </Stack.Item>
-                <Stack.Item>
+                {/* HIDDEN: Debugging option */}
+                {/* <Stack.Item>
                     <Toggle
                         label={intl.get('megaAuto.operation.debug')}
                         checked={visualConfig.debug}
@@ -135,7 +136,7 @@ const PreferencePanel: React.FC = () => {
                             });
                         }}
                     />
-                </Stack.Item>
+                </Stack.Item> */}
                 <Stack.Item>
                     <Toggle
                         label={intl.get('megaAuto.operation.zoom')}
@@ -173,7 +174,8 @@ const PreferencePanel: React.FC = () => {
                         }}
                     />
                 </Stack.Item>
-                <Stack.Item>
+                {/* HIDDEN: Axes resizing options */}
+                {/* <Stack.Item>
                     <Dropdown
                         selectedKey={visualConfig.resize}
                         label={intl.get('megaAuto.operation.resize')}
@@ -241,7 +243,7 @@ const PreferencePanel: React.FC = () => {
                             }}
                         />
                     </Stack.Item>
-                )}
+                )} */}
             </Stack>
         </Panel>
     );
