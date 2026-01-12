@@ -10,6 +10,7 @@ import { applyZeroScale, encodingDecorate, splitFieldsByEnocdes } from "./base/u
 import { applyDefaultSort, applyInteractiveParams2DistViz, applySizeConfig2DistViz } from "./distribution/utils";
 import { autoMark, autoStat, encode, humanHabbit, VizEncoder } from './distribution/bot';
 import { autoScale } from './base/scale';
+import { addDataLabels } from './base/dataLabels';
 
 interface BaseVisProps {
     dataSource: IRow[];
@@ -21,6 +22,7 @@ interface BaseVisProps {
     stepSize?: number;
     excludeScaleZero?: boolean;
     specifiedEncodes?: IFieldEncode[];
+    showDataLabels?: boolean;
 }
 
 /**
@@ -73,7 +75,7 @@ function autoCoord(fields: IFieldMeta[], spec: {[key: string]: any}, dataSource:
 }
 
 export function labDistVis(props: BaseVisProps): IVegaSubset {
-    const { pattern, dataSource, width, height, interactive, resizeMode = IResizeMode.auto, stepSize, excludeScaleZero, specifiedEncodes = [] } = props;
+    const { pattern, dataSource, width, height, interactive, resizeMode = IResizeMode.auto, stepSize, excludeScaleZero, specifiedEncodes = [], showDataLabels } = props;
     const fields = deepcopy(pattern.fields) as IFieldMeta[];
     const measures = fields.filter(f => f.analyticType === 'measure');
     const dimensions = fields.filter(f => f.analyticType === 'dimension');
@@ -173,5 +175,5 @@ export function labDistVis(props: BaseVisProps): IVegaSubset {
     if (interactive) {
         applyInteractiveParams2DistViz(basicSpec);
     }
-    return basicSpec;
+    return addDataLabels(basicSpec, showDataLabels);
 }

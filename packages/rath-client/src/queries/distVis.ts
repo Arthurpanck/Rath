@@ -7,6 +7,7 @@ import { autoScale } from './base/scale';
 import { applyZeroScale, encodingDecorate, splitFieldsByEnocdes } from "./base/utils";
 import { autoMark, autoStat, encode, humanHabbit, VizEncoder } from './distribution/bot';
 import { applyDefaultSort, applyInteractiveParams2DistViz, applySizeConfig2DistViz } from "./distribution/utils";
+import { addDataLabels } from './base/dataLabels';
 
 interface BaseVisProps {
     // dataSource: DataSource;
@@ -18,11 +19,12 @@ interface BaseVisProps {
     height?: number;
     stepSize?: number;
     excludeScaleZero?: boolean;
-    specifiedEncodes?: IFieldEncode[]
+    specifiedEncodes?: IFieldEncode[];
+    showDataLabels?: boolean;
 }
 
 export function distVis(props: BaseVisProps): IVegaSubset {
-    const { pattern, resizeMode = IResizeMode.auto, width, height, interactive, stepSize, excludeScaleZero, specifiedEncodes = [] } = props;
+    const { pattern, resizeMode = IResizeMode.auto, width, height, interactive, stepSize, excludeScaleZero, specifiedEncodes = [], showDataLabels } = props;
     const { fields } = pattern;
     const { statEncodes } = autoStat(fields, specifiedEncodes);
     const { pureFields: distFields, transedFields: statFields } = splitFieldsByEnocdes(fields, statEncodes);
@@ -72,5 +74,5 @@ export function distVis(props: BaseVisProps): IVegaSubset {
     if (interactive) {
         applyInteractiveParams2DistViz(basicSpec);
     }
-    return basicSpec;
+    return addDataLabels(basicSpec, showDataLabels);
 }
