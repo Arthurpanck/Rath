@@ -14,6 +14,7 @@ export interface IMainVizSetting {
     };
     nlg: boolean;
     excludeScaleZero: boolean;
+    showDataLabels?: boolean;
 }
 
 export type IRenderViewKey = 'pattViews' | 'featViews' | 'filterViews' | 'neighborViews';
