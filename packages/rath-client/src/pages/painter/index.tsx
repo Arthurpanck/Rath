@@ -367,7 +367,8 @@ const Painter: React.FC = (props) => {
                         </CanvasContainer>
                         <Operations />
                     </div>
-                    <div className="operation-segment">
+                    {/* HIDDEN: Tool selection section (move, color, erase, etc.) */}
+                    {/* <div className="operation-segment">
                         <Stack tokens={{ childrenGap: 18 }}>
                             <Stack.Item>
                                 <ChoiceGroup
@@ -439,7 +440,7 @@ const Painter: React.FC = (props) => {
                                 </Stack.Item>
                             )}
                         </Stack>
-                    </div>
+                    </div> */}
                 </PainterContainer>
                 <div>
                     <Stack horizontal tokens={{ childrenGap: 10 }}>
