@@ -92,7 +92,7 @@ export class DataSourceStore {
     public cookedMeasures: string[] = [];
     public cleanMethod: CleanMethod = 'dropNull';
     public loading: boolean = false;
-    public dataPreviewMode: IDataPreviewMode = IDataPreviewMode.data;
+    public dataPreviewMode: IDataPreviewMode = IDataPreviewMode.stat;
     public showDataImportSelection: boolean = false;
     public showFastSelectionModal: boolean = false;
     private fieldMetasRef!: StreamListener<IFieldMeta[]>;
@@ -142,7 +142,7 @@ export class DataSourceStore {
         this.cookedMeasures = [];
         this.cleanMethod = 'dropNull';
         this.loading = false;
-        this.dataPreviewMode = IDataPreviewMode.data;
+        this.dataPreviewMode = IDataPreviewMode.stat;
         this.showDataImportSelection = false;
         this.showFastSelectionModal = false;
         this.loadingDataProgress = 0;

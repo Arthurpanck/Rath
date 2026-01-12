@@ -114,20 +114,24 @@ const DataSourceBoard: React.FC<DataSourceBoardProps> = (props) => {
                         item.value && dataSourceStore.setDataPreviewMode(item.value as IDataPreviewMode);
                     }}
                 >
-                    <Tab value={IDataPreviewMode.data} icon={<Table />}>
+                    {/* HIDDEN: Table tab */}
+                    {/* <Tab value={IDataPreviewMode.data} icon={<Table />}>
                         {intl.get('dataSource.dataView')}
+                    </Tab> */}
+                    <Tab value={IDataPreviewMode.stat} icon={<BarChart3 />}>
+                        {intl.get('dataSource.statView')}
                     </Tab>
                     <Tab value={IDataPreviewMode.meta} icon={<List />}>
                         {intl.get('dataSource.metaView')}
                     </Tab>
-                    <Tab value={IDataPreviewMode.stat} icon={<BarChart3 />}>
-                        {intl.get('dataSource.statView')}
-                    </Tab>
                 </TabList>
-                {rawDataMetaInfo.length > 0 && <DataOperations />}
-                <DataInfo />
+                {/* HIDDEN: DataOperations (clean method, fast selection, enable/disable fields) */}
+                {/* {rawDataMetaInfo.length > 0 && <DataOperations />} */}
+                {/* HIDDEN: DataInfo (origin panel) */}
+                {/* <DataInfo /> */}
                 {rawDataMetaInfo.length > 0 && <Advice />}
-                {dataPreviewMode === IDataPreviewMode.data && <DataTable />}
+                {/* HIDDEN: DataTable view */}
+                {/* {dataPreviewMode === IDataPreviewMode.data && <DataTable />} */}
                 {dataPreviewMode === IDataPreviewMode.meta && <MetaView />}
                 {dataPreviewMode === IDataPreviewMode.stat && <ProfilingView />}
             </div>
