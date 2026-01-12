@@ -66,7 +66,8 @@ function App() {
                     {/* {appKey === PIVOT_KEYS.dashboard && <Dashboard />} */}
                     {/* HIDDEN: Causal page */}
                     {/* {appKey === PIVOT_KEYS.causal && <CausalPage />} */}
-                    {appKey === PIVOT_KEYS.connection && <DataConnection />}
+                    {/* HIDDEN: Data Connections page */}
+                    {/* {appKey === PIVOT_KEYS.connection && <DataConnection />} */}
                     <CrInfo />
                 </div>
             </div>

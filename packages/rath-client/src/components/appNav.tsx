@@ -145,8 +145,9 @@ const AppNav: React.FC<AppNavProps> = (props) => {
     const groups: INavLinkGroup[] = [
         {
             links: [
+                {/* HIDDEN: Data Connections page */}
                 ...getLinks([
-                    PIVOT_KEYS.connection,
+                    // PIVOT_KEYS.connection,
                     PIVOT_KEYS.dataSource,
                 ]),
                 {
