@@ -33,43 +33,6 @@ function App() {
         };
     }, [commonStore]);
 
-    // Hide GraphicWalker toolbar items - using MutationObserver + polling
-    useEffect(() => {
-        const toolbarItemsToHide = ['7', '8', '9', '11', '12', '13', '14', '16', '17', '18'];
-
-        const hideToolbarItems = () => {
-            document.querySelectorAll('*').forEach(el => {
-                if (el.shadowRoot) {
-                    toolbarItemsToHide.forEach(id => {
-                        const item = el.shadowRoot?.querySelector(`#toolbar-item-${id}`) as HTMLElement | null;
-                        if (item && item.style.display !== 'none') {
-                            item.style.display = 'none';
-                        }
-                    });
-                }
-            });
-        };
-
-        // MutationObserver to detect DOM changes and trigger hide
-        const observer = new MutationObserver(() => {
-            hideToolbarItems();
-        });
-
-        observer.observe(document.body, {
-            childList: true,
-            subtree: true
-        });
-
-        // Also poll as backup
-        const pollInterval = setInterval(hideToolbarItems, 500);
-        hideToolbarItems();
-
-        return () => {
-            observer.disconnect();
-            clearInterval(pollInterval);
-        };
-    }, []);
-
     const [showPerformanceWindow, setShowPerformanceWindow] = useState(false);
     useHotKey({
         'Control+Shift+P': () => setShowPerformanceWindow(on => !on),
