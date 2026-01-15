@@ -274,14 +274,14 @@ const DbGraph = memo<DbGraphProps>(function DbGraph ({ busy = false, disabled = 
     return (<>
         <Container>
             <ListContainer
-                onDrop={(e: React.DragEvent) => {
+                onDrop={e => {
                     e.stopPropagation();
                     e.preventDefault();
                     if (dragNodeRef.current !== null) {
                         deleteNode(dragNodeRef.current);
                     }
                 }}
-                onDragOver={(e: React.DragEvent) => {
+                onDragOver={e => {
                     e.stopPropagation();
                     e.preventDefault();
                     e.dataTransfer.dropEffect = dragNodeRef.current === null ? 'none' : 'move';
