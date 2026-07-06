@@ -1,6 +1,8 @@
 import { Text } from "@mantine/core";
 import type { Column, Dataset } from "../data/types";
 import { analyzeShape } from "../data/types";
+import type { VizSettings } from "../viz/settings";
+import { resolveShape } from "../viz/settings";
 import { MB_COLORS } from "../viz/options/constants";
 
 const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
@@ -21,8 +23,8 @@ export function ScalarView({ dataset, column }: { dataset: Dataset; column?: Col
   );
 }
 
-export function TrendView({ dataset }: { dataset: Dataset }) {
-  const metric = analyzeShape(dataset).metrics[0];
+export function TrendView({ dataset, settings }: { dataset: Dataset; settings: VizSettings }) {
+  const metric = resolveShape(dataset, settings).metrics[0];
   const values = dataset.rows.map((r) => Number(r[metric?.index])).filter((v) => !isNaN(v));
   const last = values[values.length - 1] ?? 0;
   const prev = values[values.length - 2] ?? last;

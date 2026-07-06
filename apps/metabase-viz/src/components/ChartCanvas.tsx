@@ -1,15 +1,16 @@
 import { useEffect, useRef } from "react";
 import * as echarts from "echarts";
 import type { Dataset } from "../data/types";
-import { analyzeShape } from "../data/types";
 import type { VizId } from "../viz/registry";
+import type { VizSettings } from "../viz/settings";
+import { resolveShape } from "../viz/settings";
 import { buildEChartsOption, isEChartsViz } from "../viz/options";
 import { MB_COLORS } from "../viz/options/constants";
 import { ScalarView, TrendView } from "./ScalarViews";
 import { DataTable } from "./DataTable";
 import { UnimplementedView } from "./UnimplementedView";
 
-function EChart({ vizId, dataset }: { vizId: VizId; dataset: Dataset }) {
+function EChart({ vizId, dataset, settings }: { vizId: VizId; dataset: Dataset; settings: VizSettings }) {
   const ref = useRef<HTMLDivElement>(null);
   const chartRef = useRef<echarts.ECharts | null>(null);
 
@@ -29,13 +30,13 @@ function EChart({ vizId, dataset }: { vizId: VizId; dataset: Dataset }) {
     const chart = chartRef.current;
     if (!chart) return;
     chart.clear();
-    chart.setOption(buildEChartsOption(vizId, dataset), true);
-  }, [vizId, dataset]);
+    chart.setOption(buildEChartsOption(vizId, dataset, settings), true);
+  }, [vizId, dataset, settings]);
 
   return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
 }
 
-export function ChartCanvas({ vizId, dataset }: { vizId: VizId; dataset: Dataset }) {
+export function ChartCanvas({ vizId, dataset, settings }: { vizId: VizId; dataset: Dataset; settings: VizSettings }) {
   const wrap = {
     width: "100%",
     height: "100%",
@@ -48,11 +49,11 @@ export function ChartCanvas({ vizId, dataset }: { vizId: VizId; dataset: Dataset
   if (vizId === "table") return <div style={wrap}><DataTable dataset={dataset} /></div>;
   if (vizId === "object") return <div style={wrap}><DataTable dataset={dataset} detail /></div>;
   if (vizId === "scalar") {
-    const m = analyzeShape(dataset).metrics[0];
+    const m = resolveShape(dataset, settings).metrics[0];
     return <div style={wrap}><ScalarView dataset={dataset} column={m} /></div>;
   }
-  if (vizId === "smartscalar") return <div style={wrap}><TrendView dataset={dataset} /></div>;
+  if (vizId === "smartscalar") return <div style={wrap}><TrendView dataset={dataset} settings={settings} /></div>;
   if (!isEChartsViz(vizId)) return <div style={wrap}><UnimplementedView vizId={vizId} /></div>;
 
-  return <EChart vizId={vizId} dataset={dataset} />;
+  return <EChart vizId={vizId} dataset={dataset} settings={settings} />;
 }

@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Box, Button, Group, Stack, Text } from "@mantine/core";
 import type { Dataset } from "../data/types";
 import { parseCsv } from "../data/csv";
-import { SAMPLE_CSV } from "../data/sample";
+import { SAMPLE_CSV, SAMPLE_DATES_CSV } from "../data/sample";
 import { MB_COLORS } from "../viz/options/constants";
 
 export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string) => void }) {
@@ -90,10 +90,14 @@ export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string)
           <Text style={{ color: "#EF8C8C", fontSize: 13 }}>{error}</Text>
         )}
 
-        <Group gap="xs">
+        <Group gap="xs" justify="center">
           <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>Pas de fichier ?</Text>
           <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_CSV, "Exemple — commandes par année")}>
-            Utiliser un jeu de données d'exemple
+            Commandes par année
+          </Button>
+          <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>·</Text>
+          <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_DATES_CSV, "Exemple — trafic mensuel")}>
+            Série temporelle (dates)
           </Button>
         </Group>
       </Stack>

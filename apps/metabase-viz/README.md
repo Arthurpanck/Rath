@@ -19,6 +19,22 @@ yarn        # ou npm install
 yarn dev    # http://localhost:5175
 ```
 
+## Panneau de réglages (clic sur l'engrenage)
+
+Comme dans Metabase, sélectionner un type puis cliquer sur l'engrenage ouvre le
+panneau de réglages (sections **Données** / **Affichage** / **Couleurs**) :
+
+- **Données** : colonne de l'axe X (dimension), séries (colonnes de valeurs).
+- **Affichage** : empilement (aucun / empilé / 100 %), afficher les valeurs,
+  afficher la légende, objectif (ligne d'objectif), titres des axes.
+- **Couleurs** : couleur par série (palette d'accents Metabase).
+
+## Axe temporel
+
+Les colonnes de type date sont détectées à l'import et rendues sur un **vrai axe
+temporel** ECharts, avec un pas de graduation choisi selon l'amplitude
+(année / mois / jour / heure) et des libellés formatés en français.
+
 ## Types de graphiques
 
 Le sélecteur reprend la liste et l'ordre de Metabase (`register.js`), avec la
