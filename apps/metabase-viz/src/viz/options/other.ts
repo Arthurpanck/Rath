@@ -1,0 +1,205 @@
+import type { EChartsOption } from "echarts";
+import type { Dataset } from "../../data/types";
+import { analyzeShape } from "../../data/types";
+import { ACCENT_COLORS, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
+
+const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
+
+function categoryValuePairs(dataset: Dataset): { name: string; value: number }[] {
+  const { dimension, metrics } = analyzeShape(dataset);
+  const metric = metrics[0];
+  return dataset.rows.map((r) => ({
+    name: String(r[dimension.index]),
+    value: Number(r[metric?.index]) || 0,
+  }));
+}
+
+export function buildPieOption(dataset: Dataset): EChartsOption {
+  const data = categoryValuePairs(dataset);
+  const total = data.reduce((s, d) => s + d.value, 0);
+  return {
+    tooltip: {
+      trigger: "item",
+      backgroundColor: MB_COLORS.white,
+      borderColor: MB_COLORS.border,
+      textStyle: { color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12 },
+      formatter: (p: any) => `${p.name}: ${nf(p.value)} (${p.percent}%)`,
+      extraCssText: "box-shadow: 0 2px 10px rgba(0,0,0,0.12); border-radius: 6px;",
+    },
+    legend: {
+      orient: "vertical",
+      right: 8,
+      top: "middle",
+      icon: "circle",
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
+    },
+    series: [
+      {
+        type: "pie",
+        radius: ["55%", "78%"],
+        center: ["38%", "50%"],
+        avoidLabelOverlap: true,
+        itemStyle: { borderColor: MB_COLORS.white, borderWidth: 2 },
+        label: {
+          show: true,
+          position: "center",
+          formatter: () => `{v|${nf(total)}}\n{l|TOTAL}`,
+          rich: {
+            v: { fontSize: 22, fontWeight: 700, color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
+            l: { fontSize: 11, color: MB_COLORS.textTertiary, fontFamily: FONT_FAMILY, padding: [4, 0, 0, 0] },
+          },
+        },
+        emphasis: { label: { show: true } },
+        data: data.map((d, i) => ({ ...d, itemStyle: { color: seriesColor(i) } })),
+      },
+    ],
+    textStyle: { fontFamily: FONT_FAMILY },
+  };
+}
+
+export function buildGaugeOption(dataset: Dataset): EChartsOption {
+  const metric = analyzeShape(dataset).metrics[0];
+  const value = Number(dataset.rows[0]?.[metric?.index]) || 0;
+  // Simple 0..max scale like Metabase's default gauge (max = 2x value or 100).
+  const max = Math.max(value * 1.5, 100);
+  return {
+    series: [
+      {
+        type: "gauge",
+        startAngle: 200,
+        endAngle: -20,
+        min: 0,
+        max,
+        progress: { show: true, width: 18, itemStyle: { color: MB_COLORS.brand } },
+        axisLine: { lineStyle: { width: 18, color: [[1, MB_COLORS.border]] } },
+        axisTick: { show: false },
+        splitLine: { length: 10, lineStyle: { color: MB_COLORS.borderStrong } },
+        axisLabel: { color: MB_COLORS.textTertiary, fontSize: 10, distance: 14, formatter: (v: number) => nf(Math.round(v)) },
+        pointer: { show: false },
+        anchor: { show: false },
+        title: { show: false },
+        detail: {
+          valueAnimation: true,
+          offsetCenter: [0, "10%"],
+          fontSize: 30,
+          fontWeight: 700,
+          fontFamily: FONT_FAMILY,
+          color: MB_COLORS.textPrimary,
+          formatter: (v: number) => nf(Math.round(v)),
+        },
+        data: [{ value }],
+      },
+    ],
+    textStyle: { fontFamily: FONT_FAMILY },
+  };
+}
+
+export function buildProgressOption(dataset: Dataset): EChartsOption {
+  const metric = analyzeShape(dataset).metrics[0];
+  const value = Number(dataset.rows[0]?.[metric?.index]) || 0;
+  const goal = value === 0 ? 100 : value * 1.25; // default goal like Metabase
+  const pct = Math.min(value / goal, 1);
+  return {
+    grid: { left: 24, right: 24, top: "40%", bottom: "40%" },
+    xAxis: { type: "value", max: goal, show: false },
+    yAxis: { type: "category", data: [""], show: false },
+    tooltip: { show: false },
+    series: [
+      { type: "bar", stack: "p", barWidth: 26, data: [value], itemStyle: { color: MB_COLORS.brand, borderRadius: [13, 0, 0, 13] as [number, number, number, number] }, silent: true },
+      { type: "bar", stack: "p", barWidth: 26, data: [goal - value], itemStyle: { color: MB_COLORS.border, borderRadius: [0, 13, 13, 0] as [number, number, number, number] }, silent: true },
+    ],
+    graphic: [
+      {
+        type: "text",
+        left: "center",
+        top: "20%",
+        style: { text: `${nf(value)} / ${nf(goal)}  (${Math.round(pct * 100)}%)`, fontSize: 16, fontWeight: 700, fill: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
+      },
+    ],
+    textStyle: { fontFamily: FONT_FAMILY },
+  };
+}
+
+export function buildFunnelOption(dataset: Dataset): EChartsOption {
+  const { dimension, metrics } = analyzeShape(dataset);
+  const metric = metrics[0];
+  const data = dataset.rows.map((r, i) => ({
+    name: String(r[dimension.index]),
+    value: Number(r[metric?.index]) || 0,
+    itemStyle: { color: seriesColor(i) },
+  }));
+  return {
+    tooltip: {
+      trigger: "item",
+      backgroundColor: MB_COLORS.white,
+      borderColor: MB_COLORS.border,
+      textStyle: { color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12 },
+      formatter: (p: any) => `${p.name}: ${nf(p.value)}`,
+    },
+    legend: {
+      bottom: 0,
+      icon: "circle",
+      itemWidth: 10,
+      itemHeight: 10,
+      textStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
+    },
+    series: [
+      {
+        type: "funnel",
+        left: "10%",
+        right: "10%",
+        top: 20,
+        bottom: 40,
+        sort: "descending",
+        gap: 2,
+        label: { show: true, position: "inside", color: "#fff", fontFamily: FONT_FAMILY, formatter: (p: any) => nf(p.value) },
+        labelLine: { show: false },
+        itemStyle: { borderColor: MB_COLORS.white, borderWidth: 1 },
+        data,
+      },
+    ],
+    textStyle: { fontFamily: FONT_FAMILY },
+  };
+}
+
+export function buildBoxplotOption(dataset: Dataset): EChartsOption {
+  const metrics = analyzeShape(dataset).metrics;
+  // Compute a five-number summary per numeric column.
+  const boxes = metrics.map((m) => {
+    const vals = dataset.rows.map((r) => Number(r[m.index])).filter((v) => !isNaN(v)).sort((a, b) => a - b);
+    const q = (p: number) => {
+      if (vals.length === 0) return 0;
+      const idx = (vals.length - 1) * p;
+      const lo = Math.floor(idx);
+      const hi = Math.ceil(idx);
+      return vals[lo] + (vals[hi] - vals[lo]) * (idx - lo);
+    };
+    return [q(0), q(0.25), q(0.5), q(0.75), q(1)];
+  });
+  return {
+    grid: { left: 56, right: 24, top: 24, bottom: 44 },
+    tooltip: { trigger: "item" },
+    xAxis: {
+      type: "category",
+      data: metrics.map((m) => m.display_name),
+      axisLabel: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
+      axisTick: { show: false },
+      axisLine: { lineStyle: { color: MB_COLORS.borderStrong } },
+    },
+    yAxis: {
+      type: "value",
+      axisLabel: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12, formatter: nf },
+      splitLine: { lineStyle: { color: MB_COLORS.gridLine, type: "dashed" } },
+    },
+    series: [
+      {
+        type: "boxplot",
+        data: boxes,
+        itemStyle: { color: ACCENT_COLORS[0] + "33", borderColor: MB_COLORS.brand, borderWidth: 1.5 },
+      },
+    ],
+    textStyle: { fontFamily: FONT_FAMILY },
+  };
+}
