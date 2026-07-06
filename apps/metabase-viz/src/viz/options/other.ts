@@ -2,16 +2,17 @@ import type { EChartsOption } from "echarts";
 import type { Dataset } from "../../data/types";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
+import { buildFrame } from "../frame";
 import { ACCENT_COLORS, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
 const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
 
 function categoryValuePairs(dataset: Dataset, settings: VizSettings): { name: string; value: number }[] {
-  const { dimension, metrics } = resolveShape(dataset, settings);
-  const metric = metrics[0];
-  return dataset.rows.map((r) => ({
-    name: String(r[dimension.index]),
-    value: Number(r[metric?.index]) || 0,
+  const frame = buildFrame(dataset, settings);
+  const first = frame.series[0];
+  return frame.categories.map((c, i) => ({
+    name: String(c),
+    value: Number(first?.values[i]) || 0,
   }));
 }
 

@@ -24,6 +24,24 @@ export const SAMPLE_DATES_CSV = `Date,Visiteurs,Conversions
 2023-11-01,2680,240
 2023-12-01,3020,275`;
 
+// Two dimensions + a measure — exercises pivot, sankey and the map.
+export const SAMPLE_MULTI_CSV = `Pays,Catégorie,Ventes
+France,Électronique,320
+France,Vêtements,210
+France,Maison,150
+Germany,Électronique,410
+Germany,Vêtements,180
+Germany,Maison,240
+Spain,Électronique,190
+Spain,Vêtements,260
+Spain,Maison,130
+Italy,Électronique,230
+Italy,Vêtements,300
+Italy,Maison,170
+United Kingdom,Électronique,380
+United Kingdom,Vêtements,220
+United Kingdom,Maison,290`;
+
 export const SAMPLE_DATASET: Dataset = {
   cols: [
     { name: "Année", display_name: "Année", base_type: "string", index: 0 },

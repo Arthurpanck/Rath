@@ -1,31 +1,27 @@
 import type { EChartsOption, SeriesOption } from "echarts";
-import type { Column, Dataset } from "../../data/types";
+import type { Dataset } from "../../data/types";
 import { getMetrics } from "../../data/types";
-import { formatDate, parseDate, pickGranularity } from "../../data/dates";
+import { formatDate, pickGranularity } from "../../data/dates";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
+import { buildFrame, type Cell, type Frame } from "../frame";
 import { AXIS_LABEL_STYLE, CHART_STYLE, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
 export type CartesianKind = "bar" | "line" | "area" | "combo" | "row" | "scatter" | "waterfall";
 
-type Cell = string | number | null;
-
 const nf = (v: number) => (v == null ? "" : Intl.NumberFormat("fr-FR").format(v));
 const pctf = (v: number) => (v == null ? "" : `${Math.round(v)} %`);
 
-function seriesColorFor(settings: VizSettings, col: Column, i: number): string {
-  return settings.colors[col.name] ?? seriesColor(i);
-}
+const colorFor = (settings: VizSettings, key: string, i: number): string => settings.colors[key] ?? seriesColor(i);
 
 function baseGrid() {
   return { left: 56, right: 24, top: 24, bottom: 48, containLabel: false };
 }
 
 function valueAxis(settings: VizSettings, name?: string, normalized = false) {
-  const title = settings.yAxisTitle ?? name;
   return {
     type: "value" as const,
-    name: title,
+    name: settings.yAxisTitle ?? name,
     max: normalized ? 100 : undefined,
     nameGap: CHART_STYLE.axisNameMargin + 24,
     nameLocation: "middle" as const,
@@ -77,8 +73,8 @@ function tooltipCfg(): EChartsOption["tooltip"] {
   };
 }
 
-function legendCfg(metrics: Column[], settings: VizSettings): EChartsOption["legend"] {
-  if (!settings.showLegend || metrics.length < 2) return { show: false };
+function legendCfg(frame: Frame, settings: VizSettings): EChartsOption["legend"] {
+  if (!settings.showLegend || frame.series.length < 2) return { show: false };
   return {
     show: true,
     top: 0,
@@ -86,15 +82,15 @@ function legendCfg(metrics: Column[], settings: VizSettings): EChartsOption["leg
     itemWidth: 10,
     itemHeight: 10,
     textStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    data: metrics.map((m) => m.display_name),
+    data: frame.series.map((s) => s.name),
   };
 }
 
-function dataLabel(settings: VizSettings, normalized: boolean) {
+function dataLabel(settings: VizSettings, normalized: boolean, position: "top" | "right" = "top") {
   if (!settings.showValues) return { show: false };
   return {
     show: true,
-    position: "top" as const,
+    position,
     color: MB_COLORS.textSecondary,
     fontFamily: FONT_FAMILY,
     fontSize: 11,
@@ -118,40 +114,34 @@ function goalMarkLine(settings: VizSettings) {
 }
 
 export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, settings: VizSettings): EChartsOption {
-  const { dimension, metrics } = resolveShape(dataset, settings);
-
   if (kind === "scatter") return buildScatter(dataset, settings);
-  if (kind === "waterfall") return buildWaterfall(dataset, settings);
-  if (kind === "row") return buildRow(dataset, settings, dimension, metrics);
+
+  const frame = buildFrame(dataset, settings);
+
+  if (kind === "row") return buildRow(frame, settings);
+  if (kind === "waterfall") return buildWaterfall(frame, settings);
 
   const isArea = kind === "area";
   const isLine = kind === "line" || isArea;
-  const isDate = dimension.base_type === "date";
-  const normalized = settings.stacking === "normalized" && !isLine ? true : settings.stacking === "normalized";
+  const isDate = frame.timestamps != null;
+  const normalized = settings.stacking === "normalized";
   const stacked = settings.stacking !== "none";
 
-  const timestamps = isDate ? dataset.rows.map((r) => parseDate(r[dimension.index]) ?? 0) : [];
-  const categories = dataset.rows.map((r) => r[dimension.index] as Cell);
+  const rowTotals = frame.categories.map((_, ci) => frame.series.reduce((s, se) => s + (se.values[ci] ?? 0), 0));
 
-  // Per-row totals for normalized stacking.
-  const rowTotals = dataset.rows.map((r) => metrics.reduce((s, m) => s + (Number(r[m.index]) || 0), 0));
-
-  const goal = goalMarkLine(settings);
-
-  const series: SeriesOption[] = metrics.map((m, i) => {
+  const series: SeriesOption[] = frame.series.map((s, i) => {
     const asLine = kind === "combo" ? i > 0 : isLine;
-    const color = seriesColorFor(settings, m, i);
-    const values = dataset.rows.map((r, ri) => {
-      let v = Number(r[m.index]);
-      if (isNaN(v)) return null;
-      if (normalized) v = rowTotals[ri] ? (v / rowTotals[ri]) * 100 : 0;
-      return isDate ? ([timestamps[ri], v] as [number, number]) : (v as number);
+    const color = colorFor(settings, s.key, i);
+    const values = s.values.map((raw, ci) => {
+      if (raw == null) return isDate ? ([frame.timestamps![ci], null] as [number, null]) : null;
+      const v = normalized ? (rowTotals[ci] ? (raw / rowTotals[ci]) * 100 : 0) : raw;
+      return isDate ? ([frame.timestamps![ci], v] as [number, number]) : (v as number);
     });
     return {
-      name: m.display_name,
+      name: s.name,
       type: asLine ? "line" : "bar",
       data: values,
-      stack: stacked && !asLine ? "stack" : stacked && asLine && kind !== "combo" ? "stack" : undefined,
+      stack: stacked && (!asLine || kind !== "combo") ? "stack" : undefined,
       itemStyle: { color, borderRadius: asLine ? 0 : [2, 2, 0, 0] },
       barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
       symbol: "circle",
@@ -159,38 +149,37 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       lineStyle: asLine ? { width: 2, color } : undefined,
       areaStyle: isArea ? { color, opacity: CHART_STYLE.opacity.area } : undefined,
       label: dataLabel(settings, normalized),
-      markLine: i === 0 ? goal : undefined,
+      markLine: i === 0 ? goalMarkLine(settings) : undefined,
     } as SeriesOption;
   });
 
   return {
-    grid: { ...baseGrid(), top: metrics.length >= 2 && settings.showLegend ? 36 : 24 },
+    grid: { ...baseGrid(), top: frame.series.length >= 2 && settings.showLegend ? 36 : 24 },
     tooltip: tooltipCfg(),
-    legend: legendCfg(metrics, settings),
-    xAxis: isDate ? timeAxis(timestamps, settings, dimension.display_name) : categoryAxis(categories, settings, dimension.display_name),
-    yAxis: valueAxis(settings, metrics.length === 1 ? metrics[0].display_name : undefined, normalized),
+    legend: legendCfg(frame, settings),
+    xAxis: isDate ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name) : categoryAxis(frame.categories, settings, frame.dimension.display_name),
+    yAxis: valueAxis(settings, frame.series.length === 1 ? frame.series[0].name : undefined, normalized),
     series,
     textStyle: { fontFamily: FONT_FAMILY },
   };
 }
 
-function buildRow(dataset: Dataset, settings: VizSettings, dimension: Column, metrics: Column[]): EChartsOption {
-  const categories = dataset.rows.map((r) => r[dimension.index] as Cell);
+function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
   const stacked = settings.stacking !== "none";
-  const series: SeriesOption[] = metrics.map((m, i) => ({
-    name: m.display_name,
+  const series: SeriesOption[] = frame.series.map((s, i) => ({
+    name: s.name,
     type: "bar",
-    data: dataset.rows.map((r) => r[m.index] as Cell),
+    data: s.values as (number | null)[],
     stack: stacked ? "stack" : undefined,
-    itemStyle: { color: seriesColorFor(settings, m, i), borderRadius: [0, 2, 2, 0] },
+    itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
     barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
-    label: settings.showValues ? { show: true, position: "right", color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 11, fontWeight: 700, formatter: (p: { value: unknown }) => nf(Number(p.value)) } : { show: false },
+    label: dataLabel(settings, false, "right"),
   }));
   return {
     grid: { ...baseGrid(), left: 120 },
     tooltip: tooltipCfg(),
-    legend: legendCfg(metrics, settings),
-    yAxis: { ...categoryAxis(categories, settings), inverse: true },
+    legend: legendCfg(frame, settings),
+    yAxis: { ...categoryAxis(frame.categories, settings), inverse: true },
     xAxis: valueAxis(settings),
     series,
     textStyle: { fontFamily: FONT_FAMILY },
@@ -213,18 +202,15 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
         type: "scatter",
         symbolSize: 10,
         data: data as (number | null)[][],
-        itemStyle: { color: seriesColorFor(settings, xMetric, 0), opacity: CHART_STYLE.opacity.scatter },
+        itemStyle: { color: colorFor(settings, xMetric?.name ?? "x", 0), opacity: CHART_STYLE.opacity.scatter },
       },
     ],
     textStyle: { fontFamily: FONT_FAMILY },
   };
 }
 
-function buildWaterfall(dataset: Dataset, settings: VizSettings): EChartsOption {
-  const { dimension, metrics } = resolveShape(dataset, settings);
-  const metric = metrics[0] ?? getMetrics(dataset)[0];
-  const categories = dataset.rows.map((r) => r[dimension.index] as Cell);
-  const values = dataset.rows.map((r) => Number(r[metric.index]) || 0);
+function buildWaterfall(frame: Frame, settings: VizSettings): EChartsOption {
+  const values = frame.series[0]?.values.map((v) => Number(v) || 0) ?? [];
 
   const bases: number[] = [];
   const positives: (number | "-")[] = [];
@@ -245,14 +231,14 @@ function buildWaterfall(dataset: Dataset, settings: VizSettings): EChartsOption 
 
   const series: SeriesOption[] = [
     { type: "bar", stack: "wf", itemStyle: { color: "transparent" }, emphasis: { itemStyle: { color: "transparent" } }, data: bases, silent: true },
-    { type: "bar", stack: "wf", name: "Hausse", itemStyle: { color: "#88BF4D", borderRadius: [2, 2, 0, 0] }, data: positives },
-    { type: "bar", stack: "wf", name: "Baisse", itemStyle: { color: "#EF8C8C", borderRadius: [2, 2, 0, 0] }, data: negatives },
+    { type: "bar", stack: "wf", name: "Hausse", itemStyle: { color: "#88BF4D", borderRadius: [2, 2, 0, 0] }, data: positives, label: dataLabel(settings, false) },
+    { type: "bar", stack: "wf", name: "Baisse", itemStyle: { color: "#EF8C8C", borderRadius: [2, 2, 0, 0] }, data: negatives, label: dataLabel(settings, false) },
   ];
 
   return {
     grid: baseGrid(),
     tooltip: tooltipCfg(),
-    xAxis: categoryAxis(categories, settings, metric.display_name),
+    xAxis: categoryAxis(frame.categories, settings, frame.dimension.display_name),
     yAxis: valueAxis(settings),
     series,
     textStyle: { fontFamily: FONT_FAMILY },

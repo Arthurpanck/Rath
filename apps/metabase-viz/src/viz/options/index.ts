@@ -4,12 +4,13 @@ import type { VizId } from "../registry";
 import type { VizSettings } from "../settings";
 import { buildCartesianOption } from "./cartesian";
 import { buildBoxplotOption, buildFunnelOption, buildGaugeOption, buildPieOption, buildProgressOption } from "./other";
+import { buildMapOption, buildSankeyOption } from "./geo-sankey";
 
 // Vizs rendered as React components (not ECharts).
-export const REACT_VIZ: VizId[] = ["table", "object", "scalar", "smartscalar"];
+export const REACT_VIZ: VizId[] = ["table", "object", "scalar", "smartscalar", "pivot"];
 
 // Vizs not yet implemented in this module.
-export const UNIMPLEMENTED: VizId[] = ["map", "pivot", "sankey"];
+export const UNIMPLEMENTED: VizId[] = [];
 
 export function isEChartsViz(id: VizId): boolean {
   return !REACT_VIZ.includes(id) && !UNIMPLEMENTED.includes(id);
@@ -35,33 +36,51 @@ export function buildEChartsOption(id: VizId, dataset: Dataset, settings: VizSet
       return buildFunnelOption(dataset, settings);
     case "boxplot":
       return buildBoxplotOption(dataset, settings);
+    case "sankey":
+      return buildSankeyOption(dataset, settings);
+    case "map":
+      return buildMapOption(dataset, settings);
     default:
       return {};
   }
 }
 
-/** Which settings controls are relevant for a given viz (drives the settings panel). */
-export function settingsCapabilities(id: VizId): {
+export interface Capabilities {
   dimension: boolean;
   metrics: boolean;
   multiMetric: boolean;
+  breakout: boolean;
+  aggregation: boolean;
+  sort: boolean;
   stacking: boolean;
   values: boolean;
   legend: boolean;
   colors: boolean;
   axisTitles: boolean;
   goal: boolean;
-} {
+  sankeyFields: boolean;
+  pivotFields: boolean;
+  mapFields: boolean;
+}
+
+/** Which settings controls are relevant for a given viz (drives the settings panel). */
+export function settingsCapabilities(id: VizId): Capabilities {
   const cartesian = ["bar", "line", "area", "combo", "row"].includes(id);
   return {
     dimension: ["bar", "line", "area", "combo", "row", "pie", "funnel", "waterfall"].includes(id),
-    metrics: !["object"].includes(id),
+    metrics: !["object", "sankey", "map"].includes(id),
     multiMetric: ["bar", "line", "area", "combo", "row", "scatter", "boxplot"].includes(id),
+    breakout: cartesian,
+    aggregation: [...["bar", "line", "area", "combo", "row", "pie", "funnel", "waterfall"], "pivot"].includes(id),
+    sort: ["bar", "line", "area", "combo", "row", "pie", "funnel"].includes(id),
     stacking: ["bar", "area", "row"].includes(id),
-    values: cartesian,
+    values: cartesian || id === "waterfall",
     legend: ["bar", "line", "area", "combo", "row", "pie", "funnel"].includes(id),
     colors: ["bar", "line", "area", "combo", "row", "progress"].includes(id),
     axisTitles: cartesian || id === "waterfall" || id === "scatter",
     goal: ["bar", "line", "area", "combo", "gauge", "progress"].includes(id),
+    sankeyFields: id === "sankey",
+    pivotFields: id === "pivot",
+    mapFields: id === "map",
   };
 }

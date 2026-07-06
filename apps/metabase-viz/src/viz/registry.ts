@@ -53,11 +53,11 @@ export const VISUALIZATIONS: VizDef[] = [
   { id: "scatter", name: "Nuage de points", icon: "bubble", implemented: true, isSensible: (d) => getMetrics(d).length >= 2 },
   { id: "boxplot", name: "Boîte à moustaches", icon: "boxplot", implemented: true, isSensible: (d) => getMetrics(d).length >= 1 },
   { id: "pie", name: "Camembert", icon: "pie", implemented: true, isSensible: (d) => hasDimAndMetric(d) && d.rows.length <= 20 },
-  { id: "map", name: "Carte", icon: "pinmap", implemented: false, isSensible: () => false },
+  { id: "map", name: "Carte", icon: "pinmap", implemented: true, isSensible: (d) => getDimensions(d).length > 0 && getMetrics(d).length >= 1 },
   { id: "funnel", name: "Entonnoir", icon: "funnel", implemented: true, isSensible: (d) => hasDimAndMetric(d) && getMetrics(d).length === 1 },
   { id: "object", name: "Visualisation détaillée", icon: "document", implemented: true, isSensible: (d) => d.rows.length === 1 },
-  { id: "pivot", name: "Tableau croisé dynamique", icon: "pivot_table", implemented: false, isSensible: () => false },
-  { id: "sankey", name: "Sankey", icon: "sankey", implemented: false, isSensible: () => false },
+  { id: "pivot", name: "Tableau croisé dynamique", icon: "pivot_table", implemented: true, isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1 },
+  { id: "sankey", name: "Sankey", icon: "sankey", implemented: true, isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1 },
 ];
 
 export const VIZ_BY_ID: Record<VizId, VizDef> = Object.fromEntries(

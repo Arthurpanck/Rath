@@ -24,10 +24,25 @@ yarn dev    # http://localhost:5175
 Comme dans Metabase, sélectionner un type puis cliquer sur l'engrenage ouvre le
 panneau de réglages (sections **Données** / **Affichage** / **Couleurs**) :
 
-- **Données** : colonne de l'axe X (dimension), séries (colonnes de valeurs).
+- **Données** : colonne de l'axe X (dimension), **éclatement par une 2ᵉ
+  dimension** (breakout → une série par valeur), séries (colonnes de valeurs),
+  **agrégation** (somme / moyenne / count / distinct / min / max) et **tri**
+  (par dimension ou par valeur). Pour Sankey / Pivot / Carte : sélecteurs de
+  champs dédiés (source-cible / lignes-colonnes / localisation).
 - **Affichage** : empilement (aucun / empilé / 100 %), afficher les valeurs,
   afficher la légende, objectif (ligne d'objectif), titres des axes.
 - **Couleurs** : couleur par série (palette d'accents Metabase).
+
+## Agrégation & données
+
+À l'import, les lignes partageant une même valeur de dimension sont regroupées
+et agrégées (somme par défaut) — comme l'étape « Résumer » de Metabase. Le tri
+et l'éclatement (breakout) sont appliqués dans le même pipeline (`viz/frame.ts`).
+
+## Export
+
+Le bouton de téléchargement (barre inférieure) exporte le graphique en **PNG**
+ou **SVG** (vectoriel, via le moteur SVG d'ECharts) et les données en **CSV**.
 
 ## Axe temporel
 
@@ -43,9 +58,13 @@ heuristique `isSensible` inspirée de Metabase.
 
 Rendus via ECharts : Barres, Courbe, Aire, Combiné, Barres horizontales,
 Nuage de points, Cascade, Camembert, Jauge, Progression, Entonnoir,
-Boîte à moustaches.
-Rendus en React : Nombre, Tendance, Table, Visualisation détaillée.
-Placeholders (non implémentés) : Carte, Tableau croisé dynamique, Sankey.
+Boîte à moustaches, **Sankey**, **Carte** (choroplèthe monde).
+Rendus en React : Nombre, Tendance, Table, Visualisation détaillée,
+**Tableau croisé dynamique**.
+
+La **Carte** utilise le GeoJSON `world.json` (fond de carte mondial issu de
+Metabase) et colore les pays selon une métrique, avec correspondance par nom de
+pays ou code ISO-A2.
 
 ## Structure
 

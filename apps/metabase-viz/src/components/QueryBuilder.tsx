@@ -1,14 +1,16 @@
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Box, Group, Text } from "@mantine/core";
+import type * as echarts from "echarts";
 import type { Dataset } from "../data/types";
 import type { VizId } from "../viz/registry";
 import { VIZ_BY_ID } from "../viz/registry";
 import type { VizSettings } from "../viz/settings";
 import { defaultSettings } from "../viz/settings";
+import { exportCsv, exportPng, exportSvg } from "../data/export";
 import { VizPickerSidebar } from "./VizPickerSidebar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChartCanvas } from "./ChartCanvas";
-import { BottomBar } from "./BottomBar";
+import { BottomBar, type ExportKind } from "./BottomBar";
 import { MB_COLORS } from "../viz/options/constants";
 
 type SidebarMode = "closed" | "picker" | "settings";
@@ -26,6 +28,15 @@ export function QueryBuilder({
   const [sidebar, setSidebar] = useState<SidebarMode>("picker");
   const [mode, setMode] = useState<"table" | "chart">("chart");
   const [settings, setSettings] = useState<VizSettings>(() => defaultSettings(dataset));
+  const chartRef = useRef<echarts.ECharts | null>(null);
+
+  const handleExport = (kind: ExportKind) => {
+    if (kind === "csv") return exportCsv(dataset, datasetName || "donnees");
+    const chart = chartRef.current;
+    if (!chart) return;
+    if (kind === "png") exportPng(chart, datasetName || "graphique");
+    else exportSvg(chart, datasetName || "graphique");
+  };
 
   // Reset settings whenever a new dataset is loaded.
   useEffect(() => {
@@ -123,7 +134,14 @@ export function QueryBuilder({
                 )}
               </Group>
               <Box style={{ flex: 1, minHeight: 0 }}>
-                <ChartCanvas vizId={effectiveViz} dataset={dataset} settings={settings} />
+                <ChartCanvas
+                  vizId={effectiveViz}
+                  dataset={dataset}
+                  settings={settings}
+                  onChartReady={(c) => {
+                    chartRef.current = c;
+                  }}
+                />
               </Box>
             </Box>
           </Box>
@@ -135,6 +153,8 @@ export function QueryBuilder({
             onOpenPicker={() => setSidebar((s) => (s === "closed" ? "picker" : "closed"))}
             pickerOpen={sidebar !== "closed"}
             elapsedMs={elapsed}
+            onExport={handleExport}
+            canExportImage={mode === "chart" && !["table", "object", "scalar", "smartscalar", "pivot"].includes(effectiveViz)}
           />
         </Box>
       </Box>

@@ -2,6 +2,8 @@ import type { Column, Dataset } from "../data/types";
 import { analyzeShape } from "../data/types";
 
 export type Stacking = "none" | "stacked" | "normalized";
+export type Aggregation = "sum" | "mean" | "count" | "min" | "max" | "distinct";
+export type SortOrder = "none" | "dim-asc" | "dim-desc" | "value-asc" | "value-desc";
 
 // User-editable visualization settings, mirroring the knobs in Metabase's
 // settings sidebar (Data + Display).
@@ -10,14 +12,30 @@ export interface VizSettings {
   dimension?: string;
   /** Y-axis series columns (by name). */
   metrics?: string[];
+  /** Optional 2nd dimension that splits a single metric into series. */
+  breakout?: string;
+  /** How repeated dimension values are combined. */
+  aggregation: Aggregation;
+  /** Category ordering. */
+  sort: SortOrder;
   stacking: Stacking;
   showValues: boolean;
   showLegend: boolean;
-  /** Per-series color override, keyed by column name. */
+  /** Per-series color override, keyed by series key (column or breakout value). */
   colors: Record<string, string>;
   xAxisTitle?: string;
   yAxisTitle?: string;
   goalValue?: number | null;
+
+  // --- viz-specific field pickers ---
+  /** Sankey: source & target dimension columns. */
+  sourceField?: string;
+  targetField?: string;
+  /** Pivot: row & column dimensions. */
+  rowField?: string;
+  colField?: string;
+  /** Map: location column (country name or ISO-A2). */
+  locationField?: string;
 }
 
 export function defaultSettings(dataset: Dataset): VizSettings {
@@ -25,6 +43,8 @@ export function defaultSettings(dataset: Dataset): VizSettings {
   return {
     dimension: dimension?.name,
     metrics: metrics.map((m) => m.name),
+    aggregation: "sum",
+    sort: "none",
     stacking: "none",
     showValues: false,
     showLegend: true,
