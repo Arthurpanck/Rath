@@ -1,5 +1,0 @@
-[submodule "causal-learn"]
-	path = causal-learn
-	url = git@github.com:Asm-Def/causal-learn
-	ignore = dirty
-	branch = server
