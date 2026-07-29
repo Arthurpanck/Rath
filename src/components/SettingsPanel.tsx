@@ -264,6 +264,20 @@ function DonneesTab({
       </Stack>
     );
   }
+  if (vizId === "scatter") {
+    const xName = settings.metrics?.[0] ?? activeMetrics[0]?.name;
+    const yName = settings.metrics?.[1] ?? activeMetrics[1]?.name ?? activeMetrics[0]?.name;
+    return (
+      <Stack gap="md">
+        <Stack gap={6}>
+          <Label>Taille des bulles</Label>
+          <Select data={metricOptions} value={settings.bubbleField ?? null} onChange={(v: any) => onChange({ bubbleField: v ?? undefined })} placeholder="Sélectionnez un champ" clearable comboboxProps={{ withinPortal: true }} size="sm" />
+        </Stack>
+        <FieldSelect label="Axe X" value={xName} data={metricOptions} onPick={(v: string) => onChange({ metrics: [v, yName].filter(Boolean) })} />
+        <FieldSelect label="Axe Y" value={yName} data={metricOptions} onPick={(v: string) => onChange({ metrics: [xName, v].filter(Boolean) })} />
+      </Stack>
+    );
+  }
   if (vizId === "table" || vizId === "object") {
     return <Text fz="sm" style={{ color: MB_COLORS.textTertiary }}>Aucune option de données pour ce type.</Text>;
   }

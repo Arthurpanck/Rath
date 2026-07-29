@@ -260,7 +260,20 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
   const all = resolved.length >= 2 ? resolved : getMetrics(dataset);
   const xMetric = all[0];
   const yMetric = all[1] ?? all[0];
-  const data = dataset.rows.map((r) => [r[xMetric.index], r[yMetric.index]] as [Cell, Cell]);
+  const bubble = settings.bubbleField ? dataset.cols.find((c) => c.name === settings.bubbleField) : undefined;
+
+  // Bubble size scaled from the chosen metric into a 8–40px radius range.
+  const bubbleVals = bubble ? dataset.rows.map((r) => Number(r[bubble.index])).filter((v) => !isNaN(v)) : [];
+  const bMin = bubbleVals.length ? Math.min(...bubbleVals) : 0;
+  const bMax = bubbleVals.length ? Math.max(...bubbleVals) : 1;
+  const sizeFor = (v: number) => (bMax === bMin ? 16 : 8 + ((v - bMin) / (bMax - bMin)) * 32);
+
+  const data = dataset.rows.map((r) => {
+    const point: (number | null)[] = [Number(r[xMetric.index]), Number(r[yMetric.index])];
+    if (bubble) point.push(Number(r[bubble.index]));
+    return point;
+  });
+
   return {
     grid: baseGrid(),
     tooltip: { ...tooltipCfg(), trigger: "item" },
@@ -269,7 +282,7 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
     series: [
       {
         type: "scatter",
-        symbolSize: 10,
+        symbolSize: bubble ? ((val: number[]) => sizeFor(val[2])) : 10,
         data: data as (number | null)[][],
         itemStyle: { color: colorFor(settings, xMetric?.name ?? "x", 0), opacity: CHART_STYLE.opacity.scatter },
       },

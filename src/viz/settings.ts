@@ -128,6 +128,8 @@ export interface VizSettings {
   colField?: string;
   /** Map: location column (country name or ISO-A2). */
   locationField?: string;
+  /** Scatter: optional metric driving bubble size. */
+  bubbleField?: string;
 }
 
 export function defaultSettings(dataset: Dataset): VizSettings {
