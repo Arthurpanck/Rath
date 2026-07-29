@@ -4,6 +4,7 @@ import type { Dataset } from "../data/types";
 import type { VizId } from "../viz/registry";
 import { splitVisualizations } from "../viz/registry";
 import { ChartTypeOption } from "./ChartTypeOption";
+import { Chevron } from "../viz/icons";
 import { MB_COLORS } from "../viz/options/constants";
 
 function OptionGrid({
@@ -66,9 +67,9 @@ export function VizPickerSidebar({
                   <Text fw={700} tt="uppercase" fz="sm" style={{ color: MB_COLORS.textSecondary }}>
                     Autres graphiques
                   </Text>
-                  <Text style={{ color: MB_COLORS.textTertiary, transform: open ? "rotate(180deg)" : "none", transition: "transform .15s" }}>
-                    ⌄
-                  </Text>
+                  <span style={{ color: MB_COLORS.textTertiary, display: "inline-flex" }}>
+                    <Chevron open={open} size={16} />
+                  </span>
                 </Group>
               </UnstyledButton>
               <Collapse in={open}>

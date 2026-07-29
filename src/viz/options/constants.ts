@@ -13,6 +13,12 @@ export const MB_COLORS = {
   bgLight: "#F9FBFC",
   white: "#FFFFFF",
   gridLine: "#EDF2F5",
+  // Table (matches Metabase's data grid)
+  tableHeaderBg: "#F9FBFC",
+  tableHeaderText: "#7C8797",
+  tableRowHover: "#F4FAFE",
+  tableRowBorder: "#F0F0F0",
+  tableIdBg: "#EEF6FD",
 };
 
 // Canonical Metabase chart series palette (accent0..accent7).

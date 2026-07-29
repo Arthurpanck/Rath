@@ -11,6 +11,7 @@ import { VizPickerSidebar } from "./VizPickerSidebar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChartCanvas } from "./ChartCanvas";
 import { BottomBar, type ExportKind } from "./BottomBar";
+import { Cog } from "../viz/icons";
 import { MB_COLORS } from "../viz/options/constants";
 
 type SidebarMode = "closed" | "picker" | "settings";
@@ -25,8 +26,10 @@ export function QueryBuilder({
   onReset: () => void;
 }) {
   const [selected, setSelected] = useState<VizId>("bar");
-  const [sidebar, setSidebar] = useState<SidebarMode>("picker");
-  const [mode, setMode] = useState<"table" | "chart">("chart");
+  // Like Metabase: after a query runs you land on the table with the
+  // visualization picker collapsed; you open it via the "Visualisation" button.
+  const [sidebar, setSidebar] = useState<SidebarMode>("closed");
+  const [mode, setMode] = useState<"table" | "chart">("table");
   const [settings, setSettings] = useState<VizSettings>(() => defaultSettings(dataset));
   const chartRef = useRef<echarts.ECharts | null>(null);
 
@@ -81,10 +84,16 @@ export function QueryBuilder({
         {sidebar === "picker" && (
           <VizPickerSidebar
             dataset={dataset}
-            selected={selected}
+            selected={effectiveViz}
             onSelect={(id) => {
-              setSelected(id);
-              setMode("chart");
+              // The picker highlights the current display; picking "Table"
+              // returns to table mode, any other type switches to chart mode.
+              if (id === "table") {
+                setMode("table");
+              } else {
+                setSelected(id);
+                setMode("chart");
+              }
             }}
             onDone={() => setSidebar("closed")}
             onOpenSettings={() => {
@@ -126,10 +135,7 @@ export function QueryBuilder({
                     aria-label="Réglages"
                     style={{ border: "none", background: "transparent", cursor: "pointer", color: MB_COLORS.textTertiary, display: "inline-flex" }}
                   >
-                    <svg width="18" height="18" viewBox="0 0 20 20" fill="none">
-                      <circle cx="10" cy="10" r="2.4" stroke="currentColor" strokeWidth="1.6" />
-                      <path d="M10 3v2M10 15v2M3 10h2M15 10h2M5 5l1.4 1.4M13.6 13.6L15 15M15 5l-1.4 1.4M6.4 13.6L5 15" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" />
-                    </svg>
+                    <Cog size={18} />
                   </button>
                 )}
               </Group>
@@ -150,8 +156,13 @@ export function QueryBuilder({
             rowCount={dataset.rows.length}
             mode={mode}
             onToggleMode={setMode}
-            onOpenPicker={() => setSidebar((s) => (s === "closed" ? "picker" : "closed"))}
-            pickerOpen={sidebar !== "closed"}
+            onOpenPicker={() => setSidebar((s) => (s === "picker" ? "closed" : "picker"))}
+            onOpenSettings={() => {
+              setMode("chart");
+              setSidebar((s) => (s === "settings" ? "closed" : "settings"));
+            }}
+            pickerOpen={sidebar === "picker"}
+            settingsOpen={sidebar === "settings"}
             elapsedMs={elapsed}
             onExport={handleExport}
             canExportImage={mode === "chart" && !["table", "object", "scalar", "smartscalar", "pivot"].includes(effectiveViz)}

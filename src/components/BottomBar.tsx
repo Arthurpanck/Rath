@@ -1,4 +1,5 @@
-import { Button, Group, Menu, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Button, Group, Menu, Text, UnstyledButton } from "@mantine/core";
+import { Cog } from "../viz/icons";
 import { MB_COLORS } from "../viz/options/constants";
 
 export type ExportKind = "png" | "svg" | "csv";
@@ -34,7 +35,9 @@ export function BottomBar({
   mode,
   onToggleMode,
   onOpenPicker,
+  onOpenSettings,
   pickerOpen,
+  settingsOpen,
   elapsedMs,
   onExport,
   canExportImage,
@@ -43,7 +46,9 @@ export function BottomBar({
   mode: "table" | "chart";
   onToggleMode: (m: "table" | "chart") => void;
   onOpenPicker: () => void;
+  onOpenSettings: () => void;
   pickerOpen: boolean;
+  settingsOpen: boolean;
   elapsedMs: number;
   onExport: (kind: ExportKind) => void;
   canExportImage: boolean;
@@ -53,7 +58,7 @@ export function BottomBar({
       justify="space-between"
       style={{ padding: "10px 16px", borderTop: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.white, height: 56 }}
     >
-      <Group gap="xs">
+      <Group gap={6}>
         <Button
           radius="xl"
           size="sm"
@@ -66,6 +71,16 @@ export function BottomBar({
         >
           Visualisation
         </Button>
+        <ActionIcon
+          radius="xl"
+          size="lg"
+          variant={settingsOpen ? "filled" : "light"}
+          color="brand"
+          onClick={onOpenSettings}
+          aria-label="Paramètres de visualisation"
+        >
+          <Cog size={17} />
+        </ActionIcon>
       </Group>
 
       <ViewToggle mode={mode} onChange={onToggleMode} />
