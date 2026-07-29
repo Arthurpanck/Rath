@@ -6,10 +6,12 @@ import {
   ColorInput,
   Group,
   NumberInput,
+  Popover,
   Radio,
   ScrollArea,
   SegmentedControl,
   Select,
+  SimpleGrid,
   Stack,
   Switch,
   Table,
@@ -35,8 +37,8 @@ import type {
   XScale,
   YScale,
 } from "../viz/settings";
-import { resolveShape } from "../viz/settings";
-import { buildFrame } from "../viz/frame";
+import { findColumn, resolveShape } from "../viz/settings";
+import type { AxisPosition, BarWidth, FillOpacity, LineDash, LineShape, LineSize, MarkerMode, SeriesDisplay, SeriesOpts } from "../viz/settings";
 import { CURRENCIES } from "../viz/format";
 import { seriesColor, MB_COLORS } from "../viz/options/constants";
 
@@ -87,6 +89,34 @@ const Label = ({ children, htmlFor }: { children: React.ReactNode; htmlFor?: str
   </Text>
 );
 
+// Metabase color affordance: a round color dot that opens a small swatch palette.
+function ColorDot({ value, onChange }: { value: string; onChange: (v: string) => void }) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Popover opened={open} onChange={setOpen} position="bottom-start" withArrow shadow="md" width={160}>
+      <Popover.Target>
+        <UnstyledButton
+          onClick={() => setOpen((o) => !o)}
+          aria-label={value}
+          style={{ width: 18, height: 18, borderRadius: "50%", background: value, border: "2px solid #fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)", flexShrink: 0 }}
+        />
+      </Popover.Target>
+      <Popover.Dropdown p="xs">
+        <SimpleGrid cols={4} spacing={8}>
+          {SWATCHES.map((c) => (
+            <UnstyledButton
+              key={c}
+              aria-label={c}
+              onClick={() => { onChange(c); setOpen(false); }}
+              style={{ width: 24, height: 24, borderRadius: "50%", background: c, outline: c.toLowerCase() === value.toLowerCase() ? `2px solid ${MB_COLORS.textPrimary}` : "none", outlineOffset: 2 }}
+            />
+          ))}
+        </SimpleGrid>
+      </Popover.Dropdown>
+    </Popover>
+  );
+}
+
 export function SettingsPanel({
   vizId,
   dataset,
@@ -103,6 +133,8 @@ export function SettingsPanel({
   const def = VIZ_BY_ID[vizId];
   const tabs = TABS[vizId] ?? ["Données"];
   const [tab, setTab] = useState(tabs[0]);
+  const [editingSeries, setEditingSeries] = useState<string | null>(null);
+  const seriesConfigurable = ["bar", "line", "area", "combo", "row"].includes(vizId);
 
   const allCols = dataset.cols.map((c) => ({ value: c.name, label: c.display_name }));
   const dimCols = getDimensions(dataset);
@@ -122,7 +154,7 @@ export function SettingsPanel({
         <Text fw={700} style={{ color: MB_COLORS.textPrimary }}>Options {def.name}</Text>
       </Group>
 
-      <Tabs value={tab} onChange={(v) => v && setTab(v)} variant="default">
+      <Tabs value={tab} onChange={(v) => { if (v) { setTab(v); setEditingSeries(null); } }} variant="default">
         <Tabs.List grow style={{ padding: "0 8px" }}>
           {tabs.map((t) => (
             <Tabs.Tab key={t} value={t} style={{ fontWeight: 700, fontSize: 13 }}>{t}</Tabs.Tab>
@@ -131,8 +163,11 @@ export function SettingsPanel({
 
         <ScrollArea style={{ height: "calc(100vh - 190px)" }}>
           <Box style={{ padding: 16 }}>
-            {tab === "Données" && (
-              <DonneesTab vizId={vizId} dataset={dataset} settings={settings} onChange={onChange} allCols={allCols} dimOptions={dimOptions} metricCols={metricCols} metricOptions={metricOptions} activeMetrics={activeMetrics} />
+            {tab === "Données" && editingSeries && (
+              <SeriesSettingsPanel vizId={vizId} dataset={dataset} seriesKey={editingSeries} settings={settings} onChange={onChange} onBack={() => setEditingSeries(null)} />
+            )}
+            {tab === "Données" && !editingSeries && (
+              <DonneesTab vizId={vizId} dataset={dataset} settings={settings} onChange={onChange} allCols={allCols} dimOptions={dimOptions} metricCols={metricCols} metricOptions={metricOptions} activeMetrics={activeMetrics} onEditSeries={seriesConfigurable ? setEditingSeries : undefined} />
             )}
             {tab === "Affichage" && (
               <AffichageTab vizId={vizId} dataset={dataset} settings={settings} onChange={onChange} isCartesian={isCartesian} activeMetrics={activeMetrics} />
@@ -161,6 +196,7 @@ function DonneesTab({
   dimOptions,
   metricOptions,
   activeMetrics,
+  onEditSeries,
 }: any) {
   const addSeries = (name: string) => {
     const cur = settings.metrics ?? activeMetrics.map((m: any) => m.name);
@@ -246,17 +282,17 @@ function DonneesTab({
         <Label>{yLabel}</Label>
         <Stack gap={6}>
           {activeMetrics.map((m: any, i: number) => (
-            <Group key={m.name} gap={8} wrap="nowrap" style={{ border: `1px solid ${MB_COLORS.border}`, borderRadius: 8, padding: "4px 8px" }}>
-              <ColorInput
-                value={settings.colors[m.name] ?? seriesColor(i)}
-                onChange={(v) => onChange({ colors: { ...settings.colors, [m.name]: v } })}
-                withEyeDropper={false}
-                withPicker={false}
-                swatches={SWATCHES}
-                size="xs"
-                styles={{ input: { width: 26, height: 24, padding: 0, border: "none", color: "transparent", cursor: "pointer" }, section: { display: "none" }, wrapper: { width: 26 } }}
-              />
-              <Text fz="sm" style={{ flex: 1, color: MB_COLORS.textPrimary }}>{m.display_name}</Text>
+            <Group key={m.name} gap={8} wrap="nowrap" style={{ border: `1px solid ${MB_COLORS.border}`, borderRadius: 8, padding: "6px 10px" }}>
+              <span style={{ color: MB_COLORS.textTertiary, cursor: "grab", display: "inline-flex" }} aria-hidden>
+                <svg width="10" height="16" viewBox="0 0 10 16" fill="currentColor"><circle cx="2" cy="3" r="1.3" /><circle cx="8" cy="3" r="1.3" /><circle cx="2" cy="8" r="1.3" /><circle cx="8" cy="8" r="1.3" /><circle cx="2" cy="13" r="1.3" /><circle cx="8" cy="13" r="1.3" /></svg>
+              </span>
+              <ColorDot value={settings.colors[m.name] ?? seriesColor(i)} onChange={(v) => onChange({ colors: { ...settings.colors, [m.name]: v } })} />
+              <Text fz="sm" fw={600} style={{ flex: 1, color: MB_COLORS.textPrimary }}>{m.display_name}</Text>
+              {onEditSeries && (
+                <ActionIcon size="sm" variant="subtle" color="gray" aria-label={`Options ${m.display_name}`} onClick={() => onEditSeries(m.name)}>
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.5" /><circle cx="10" cy="10" r="1.5" /><circle cx="16" cy="10" r="1.5" /></svg>
+                </ActionIcon>
+              )}
               {activeMetrics.length > 1 && (
                 <ActionIcon size="sm" variant="subtle" color="gray" aria-label={`Retirer ${m.display_name}`} onClick={() => removeSeries(m.name)}>
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
@@ -266,7 +302,7 @@ function DonneesTab({
           ))}
         </Stack>
         {availableToAdd.length > 0 && (
-          <Select placeholder="Ajouter une série…" data={availableToAdd} value={null} onChange={(v) => v && addSeries(v)} comboboxProps={{ withinPortal: true }} size="sm" />
+          <Select placeholder="Ajouter une autre série" data={availableToAdd} value={null} onChange={(v) => v && addSeries(v)} comboboxProps={{ withinPortal: true }} size="sm" />
         )}
       </Stack>
 
@@ -303,10 +339,9 @@ function DataExtras(settings: VizSettings, onChange: (p: Partial<VizSettings>) =
 
 // -------------------------------------------------------------- Affichage ----
 
-function AffichageTab({ vizId, dataset, settings, onChange, isCartesian }: any) {
+function AffichageTab({ vizId, settings, onChange, isCartesian }: any) {
   const stackable = ["bar", "area", "row"].includes(vizId);
   const cartesianDisplay = isCartesian;
-  const frame = isCartesian ? buildFrame(dataset, settings) : null;
 
   return (
     <Stack gap="md">
@@ -381,15 +416,6 @@ function AffichageTab({ vizId, dataset, settings, onChange, isCartesian }: any) 
         </>
       )}
 
-      {/* Series colors */}
-      {frame && frame.series.length > 0 && (["bar", "line", "area", "combo", "row"].includes(vizId)) && (
-        <Stack gap={6}>
-          <Label>Couleurs</Label>
-          {frame.series.map((s: any, i: number) => (
-            <ColorInput key={s.key} size="sm" label={s.name} format="hex" swatches={SWATCHES} value={settings.colors[s.key] ?? seriesColor(i)} onChange={(v) => onChange({ colors: { ...settings.colors, [s.key]: v } })} />
-          ))}
-        </Stack>
-      )}
     </Stack>
   );
 }
@@ -540,6 +566,89 @@ function RangesTab({ settings, onChange }: { settings: VizSettings; onChange: (p
         </Table.Tbody>
       </Table>
       <Button variant="subtle" size="compact-sm" color="brand" onClick={add} style={{ alignSelf: "flex-start" }}>+ Ajouter une plage</Button>
+    </Stack>
+  );
+}
+
+// ------------------------------------------------ Series settings ("…") ----
+
+function Seg<T extends string>({ label, value, onChange, data }: { label: string; value: T; onChange: (v: T) => void; data: { label: string; value: T }[] }) {
+  return (
+    <Stack gap={4}>
+      <Label>{label}</Label>
+      <SegmentedControl fullWidth size="xs" value={value} onChange={(v) => onChange(v as T)} data={data} />
+    </Stack>
+  );
+}
+
+function baseDisplay(vizId: VizId): SeriesDisplay {
+  if (vizId === "area") return "area";
+  if (vizId === "bar" || vizId === "row" || vizId === "combo") return "bar";
+  return "line";
+}
+
+function SeriesSettingsPanel({
+  vizId,
+  dataset,
+  seriesKey,
+  settings,
+  onChange,
+  onBack,
+}: {
+  vizId: VizId;
+  dataset: Dataset;
+  seriesKey: string;
+  settings: VizSettings;
+  onChange: (patch: Partial<VizSettings>) => void;
+  onBack: () => void;
+}) {
+  const col = findColumn(dataset, seriesKey);
+  const displayName = col?.display_name ?? seriesKey;
+  const opts: SeriesOpts = settings.series[seriesKey] ?? {};
+  const patch = (p: Partial<SeriesOpts>) => onChange({ series: { ...settings.series, [seriesKey]: { ...opts, ...p } } });
+
+  const display = opts.display ?? baseDisplay(vizId);
+  const isLineLike = display === "line" || display === "area";
+  const idx = resolveShape(dataset, settings).metrics.findIndex((m) => m.name === seriesKey);
+
+  return (
+    <Stack gap="md">
+      <Group gap="xs">
+        <UnstyledButton onClick={onBack} aria-label="Retour aux séries" style={{ color: MB_COLORS.textSecondary, display: "inline-flex" }}>
+          <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M12 4L6 10l6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        </UnstyledButton>
+        <Text fw={700} style={{ color: MB_COLORS.textPrimary }}>{opts.name ?? displayName}</Text>
+      </Group>
+
+      {/* Color + rename */}
+      <Group gap={8} wrap="nowrap">
+        <ColorDot value={settings.colors[seriesKey] ?? seriesColor(idx < 0 ? 0 : idx)} onChange={(v) => onChange({ colors: { ...settings.colors, [seriesKey]: v } })} />
+        <TextInput size="sm" style={{ flex: 1 }} value={opts.name ?? displayName} onChange={(e) => patch({ name: e.currentTarget.value })} data-testid="series-name-input" />
+      </Group>
+
+      <Seg<AxisPosition> label={vizId === "row" ? "Position de l'axe des abscisses" : "Position de l'axe des ordonnées"} value={opts.axis ?? "auto"} onChange={(v) => patch({ axis: v })} data={[{ label: "Auto", value: "auto" }, { label: vizId === "row" ? "Bas" : "Gauche", value: "left" }, { label: vizId === "row" ? "Haut" : "Droite", value: "right" }]} />
+
+      <Seg<SeriesDisplay> label="Type d'affichage" value={display} onChange={(v) => patch({ display: v })} data={[{ label: "Ligne", value: "line" }, { label: "Aire", value: "area" }, { label: "Barre", value: "bar" }]} />
+
+      {isLineLike && (
+        <>
+          <Seg<LineShape> label="Forme de la ligne" value={opts.lineShape ?? "straight"} onChange={(v) => patch({ lineShape: v })} data={[{ label: "Droite", value: "straight" }, { label: "Courbe", value: "curved" }, { label: "Paliers", value: "stepped" }]} />
+          <Seg<LineDash> label="Style de ligne" value={opts.lineDash ?? "solid"} onChange={(v) => patch({ lineDash: v })} data={[{ label: "Pleine", value: "solid" }, { label: "Tirets", value: "dashed" }, { label: "Points", value: "dotted" }]} />
+          <Seg<LineSize> label="Taille de la ligne" value={opts.lineSize ?? "M"} onChange={(v) => patch({ lineSize: v })} data={[{ label: "S", value: "S" }, { label: "M", value: "M" }, { label: "L", value: "L" }]} />
+          <Seg<MarkerMode> label="Afficher les points sur les lignes" value={opts.markers ?? "auto"} onChange={(v) => patch({ markers: v })} data={[{ label: "Auto", value: "auto" }, { label: "Oui", value: "on" }, { label: "Non", value: "off" }]} />
+        </>
+      )}
+
+      {display === "area" && (
+        <Seg<FillOpacity> label="Opacité du remplissage" value={opts.areaOpacity ?? "auto"} onChange={(v) => patch({ areaOpacity: v })} data={[{ label: "Auto", value: "auto" }, { label: "Opaque", value: "opaque" }, { label: "Transparent", value: "transparent" }]} />
+      )}
+
+      {display === "bar" && (
+        <Seg<BarWidth> label={vizId === "row" ? "Hauteur de barre" : "Largeur de barre"} value={opts.barWidth ?? "normal"} onChange={(v) => patch({ barWidth: v })} data={[{ label: "Très mince", value: "xs" }, { label: "Normal", value: "normal" }, { label: "Large", value: "wide" }, { label: "Très large", value: "xl" }]} />
+      )}
+
+      <Switch size="sm" checked={opts.showValues ?? false} label="Afficher les valeurs pour cette série" onChange={(e) => patch({ showValues: e.currentTarget.checked })} />
+      <Switch size="sm" checked={opts.trendline ?? false} label="Afficher une courbe de tendance pour cette série" onChange={(e) => patch({ trendline: e.currentTarget.checked })} />
     </Stack>
   );
 }

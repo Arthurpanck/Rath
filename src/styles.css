@@ -18,3 +18,11 @@ body {
   background: #ffffff;
   -webkit-font-smoothing: antialiased;
 }
+
+/* Metabase-style switch: no thumb indicator, just a colored track. */
+.mantine-Switch-thumb {
+  display: none !important;
+}
+.mantine-Switch-track {
+  min-width: 2.25rem;
+}

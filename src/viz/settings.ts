@@ -18,6 +18,30 @@ export interface GaugeRange {
   max: number;
 }
 
+export type SeriesDisplay = "line" | "bar" | "area";
+export type AxisPosition = "auto" | "left" | "right";
+export type LineShape = "straight" | "curved" | "stepped";
+export type LineDash = "solid" | "dashed" | "dotted";
+export type LineSize = "S" | "M" | "L";
+export type MarkerMode = "auto" | "on" | "off";
+export type FillOpacity = "auto" | "opaque" | "transparent";
+export type BarWidth = "xs" | "normal" | "wide" | "xl";
+
+// Per-series options edited from the "…" series-settings panel (differs per chart).
+export interface SeriesOpts {
+  name?: string;
+  axis?: AxisPosition;
+  display?: SeriesDisplay;
+  lineShape?: LineShape;
+  lineDash?: LineDash;
+  lineSize?: LineSize;
+  markers?: MarkerMode;
+  areaOpacity?: FillOpacity;
+  barWidth?: BarWidth;
+  showValues?: boolean;
+  trendline?: boolean;
+}
+
 // Number-formatting options (Metabase "Mise en forme"), reusable across the
 // scalar viz, gauge, progress and axis/value labels.
 export interface NumberFormat {
@@ -52,6 +76,8 @@ export interface VizSettings {
   showLegend: boolean;
   /** Per-series color override, keyed by series key (column or breakout value). */
   colors: Record<string, string>;
+  /** Per-series options from the "…" panel, keyed by series key. */
+  series: Record<string, SeriesOpts>;
   xAxisTitle?: string;
   yAxisTitle?: string;
   goalValue?: number | null;
@@ -115,6 +141,7 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     showValues: false,
     showLegend: true,
     colors: {},
+    series: {},
     goalValue: null,
     showTrendline: false,
     stackSeries: false,

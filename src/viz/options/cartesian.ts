@@ -4,13 +4,13 @@ import { getMetrics } from "../../data/types";
 import { formatDate, pickGranularity } from "../../data/dates";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
-import { formatCompact } from "../format";
+import { formatCompact, nf2 } from "../format";
 import { buildFrame, type Cell, type Frame } from "../frame";
 import { AXIS_LABEL_STYLE, CHART_STYLE, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
 export type CartesianKind = "bar" | "line" | "area" | "combo" | "row" | "scatter" | "waterfall";
 
-const nf = (v: number) => (v == null ? "" : Intl.NumberFormat("fr-FR").format(v));
+const nf = (v: number) => nf2(v);
 const pctf = (v: number) => (v == null ? "" : `${Math.round(v)} %`);
 
 const colorFor = (settings: VizSettings, key: string, i: number): string => settings.colors[key] ?? seriesColor(i);
@@ -88,7 +88,7 @@ function timeAxis(timestamps: number[], settings: VizSettings, name?: string) {
 function tooltipCfg(): EChartsOption["tooltip"] {
   return {
     trigger: "axis",
-    axisPointer: { type: "shadow", shadowStyle: { color: "rgba(80,158,227,0.08)" } },
+    axisPointer: { type: "line", lineStyle: { color: MB_COLORS.border, width: 1 } },
     backgroundColor: MB_COLORS.white,
     borderColor: MB_COLORS.border,
     borderWidth: 1,
@@ -153,34 +153,51 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
 
   const rowTotals = frame.categories.map((_, ci) => frame.series.reduce((s, se) => s + (se.values[ci] ?? 0), 0));
 
+  const BAR_WIDTH: Record<string, number> = { xs: 0.35, normal: 0.8, wide: 0.95, xl: 1 };
+  const LINE_WIDTH: Record<string, number> = { S: 1.5, M: 2, L: 3.5 };
+  const baseDisp = (i: number): "line" | "bar" | "area" => (kind === "combo" ? (i > 0 ? "line" : "bar") : isArea ? "area" : isLine ? "line" : "bar");
+  const anyRight = frame.series.some((s) => settings.series[s.key]?.axis === "right");
+
   const series: SeriesOption[] = frame.series.map((s, i) => {
-    const asLine = kind === "combo" ? i > 0 : isLine;
+    const o = settings.series[s.key] ?? {};
+    const disp = o.display ?? baseDisp(i);
+    const asLine = disp === "line" || disp === "area";
+    const asArea = disp === "area";
     const color = colorFor(settings, s.key, i);
     const values = s.values.map((raw, ci) => {
       if (raw == null) return isDate ? ([frame.timestamps![ci], null] as [number, null]) : null;
       const v = normalized ? (rowTotals[ci] ? (raw / rowTotals[ci]) * 100 : 0) : raw;
       return isDate ? ([frame.timestamps![ci], v] as [number, number]) : (v as number);
     });
+    const areaOpacity = o.areaOpacity === "opaque" ? 0.9 : o.areaOpacity === "transparent" ? 0.12 : CHART_STYLE.opacity.area;
+    const showSym = o.markers === "on" ? true : o.markers === "off" ? false : undefined;
+    const seriesShowValues = settings.showValues || o.showValues;
     return {
-      name: s.name,
+      name: o.name ?? s.name,
       type: asLine ? "line" : "bar",
+      yAxisIndex: o.axis === "right" ? 1 : 0,
       data: values,
       stack: stacked && (!asLine || kind !== "combo") ? "stack" : undefined,
       itemStyle: { color, borderRadius: asLine ? 0 : [2, 2, 0, 0] },
-      barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
+      barMaxWidth: `${(BAR_WIDTH[o.barWidth ?? "normal"] ?? 0.8) * 100}%`,
       symbol: "circle",
       symbolSize: CHART_STYLE.symbolSize,
-      lineStyle: asLine ? { width: 2, color } : undefined,
-      areaStyle: isArea ? { color, opacity: CHART_STYLE.opacity.area } : undefined,
-      label: dataLabel(settings, normalized),
+      showSymbol: showSym,
+      smooth: o.lineShape === "curved" ? 0.35 : false,
+      step: o.lineShape === "stepped" ? ("end" as const) : undefined,
+      lineStyle: asLine ? { width: LINE_WIDTH[o.lineSize ?? "M"] ?? 2, color, type: o.lineDash ?? "solid" } : undefined,
+      areaStyle: asArea ? { color, opacity: areaOpacity } : undefined,
+      label: dataLabel({ ...settings, showValues: !!seriesShowValues }, normalized),
       markLine: i === 0 ? goalMarkLine(settings) : undefined,
     } as SeriesOption;
   });
 
-  // Trend lines (linear regression) per series — like Metabase's show_trendline.
-  if (settings.showTrendline && !normalized) {
+  // Trend lines (linear regression), global or per-series (Metabase show_trendline).
+  if (!normalized) {
     const xs = isDate ? frame.timestamps! : frame.categories.map((_, i) => i);
     frame.series.forEach((s, i) => {
+      const wantTrend = settings.showTrendline || settings.series[s.key]?.trendline;
+      if (!wantTrend) return;
       const fit = linearFit(xs, s.values);
       if (!fit) return;
       const color = colorFor(settings, s.key, i);
@@ -191,6 +208,7 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       series.push({
         name: `Tendance · ${s.name}`,
         type: "line",
+        yAxisIndex: settings.series[s.key]?.axis === "right" ? 1 : 0,
         data,
         symbol: "none",
         lineStyle: { color, width: 1.5, type: "dashed" },
@@ -201,12 +219,15 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
     });
   }
 
+  const leftAxis = valueAxis(settings, frame.series.length === 1 ? frame.series[0].name : undefined, normalized);
+  const yAxis = anyRight ? [leftAxis, { ...valueAxis(settings, undefined, normalized), position: "right" as const }] : leftAxis;
+
   return {
     grid: { ...baseGrid(), top: frame.series.length >= 2 && settings.showLegend ? 36 : 24 },
     tooltip: tooltipCfg(),
     legend: legendCfg(frame, settings),
     xAxis: isDate ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name) : categoryAxis(frame.categories, settings, frame.dimension.display_name),
-    yAxis: valueAxis(settings, frame.series.length === 1 ? frame.series[0].name : undefined, normalized),
+    yAxis,
     series,
     textStyle: { fontFamily: FONT_FAMILY },
   };

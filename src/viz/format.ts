@@ -1,5 +1,8 @@
 import type { NumberFormat } from "./settings";
 
+// Shared default: plain numbers show at most 2 decimals (like Metabase).
+export const nf2 = (v: number): string => (v == null || isNaN(v) ? "" : new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(v));
+
 // Metabase-style number formatting (Mise en forme): style, currency, decimals,
 // multiplier, prefix/suffix. Used by the scalar viz, gauge/progress and labels.
 export function formatNumber(value: number, fmt: NumberFormat): string {
@@ -8,7 +11,8 @@ export function formatNumber(value: number, fmt: NumberFormat): string {
   if (fmt.multiplyBy != null && fmt.multiplyBy !== 0) v *= fmt.multiplyBy;
 
   const decimals = fmt.decimals ?? undefined;
-  const fracOpts = decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : {};
+  // When no explicit decimal count is set, cap at 2 decimals by default.
+  const fracOpts = decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : { maximumFractionDigits: 2 };
 
   let core: string;
   switch (fmt.style) {

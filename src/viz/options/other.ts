@@ -3,10 +3,10 @@ import type { Dataset } from "../../data/types";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
 import { buildFrame } from "../frame";
-import { formatNumber } from "../format";
+import { formatNumber, nf2 } from "../format";
 import { ACCENT_COLORS, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
-const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
+const nf = (v: number) => nf2(v);
 
 function categoryValuePairs(dataset: Dataset, settings: VizSettings): { name: string; value: number }[] {
   const frame = buildFrame(dataset, settings);

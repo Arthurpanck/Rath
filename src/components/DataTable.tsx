@@ -1,8 +1,9 @@
 import { Table } from "@mantine/core";
 import type { Dataset } from "../data/types";
+import { nf2 } from "../viz/format";
 import { MB_COLORS } from "../viz/options/constants";
 
-const nf = (v: unknown) => (typeof v === "number" ? Intl.NumberFormat("fr-FR").format(v) : String(v ?? ""));
+const nf = (v: unknown) => (typeof v === "number" ? nf2(v) : String(v ?? ""));
 
 export function DataTable({ dataset, detail = false }: { dataset: Dataset; detail?: boolean }) {
   if (detail) {
