@@ -18,7 +18,7 @@ import type { Dataset } from "../data/types";
 import { getDimensions, isMetric } from "../data/types";
 import type { VizId } from "../viz/registry";
 import { VIZ_BY_ID } from "../viz/registry";
-import type { Aggregation, SortOrder, Stacking, VizSettings } from "../viz/settings";
+import type { Aggregation, PiePercent, SortOrder, Stacking, VizSettings, YScale } from "../viz/settings";
 import { resolveShape } from "../viz/settings";
 import { buildFrame } from "../viz/frame";
 import { settingsCapabilities } from "../viz/options";
@@ -184,7 +184,7 @@ export function SettingsPanel({
             )}
           </Stack>
 
-          {(caps.stacking || caps.values || caps.legend || caps.goal || caps.axisTitles) && (
+          {(caps.stacking || caps.values || caps.legend || caps.goal || caps.axisTitles || caps.trendline) && (
             <>
               <Divider />
               <Stack gap="sm">
@@ -209,6 +209,7 @@ export function SettingsPanel({
 
                 {caps.values && <Switch size="sm" checked={settings.showValues} label="Afficher les valeurs" onChange={(e) => onChange({ showValues: e.currentTarget.checked })} />}
                 {caps.legend && <Switch size="sm" checked={settings.showLegend} label="Afficher la légende" onChange={(e) => onChange({ showLegend: e.currentTarget.checked })} />}
+                {caps.trendline && <Switch size="sm" checked={settings.showTrendline} label="Courbe de tendance" onChange={(e) => onChange({ showTrendline: e.currentTarget.checked })} />}
 
                 {caps.goal && (
                   <NumberInput label="Objectif" placeholder="aucun" value={settings.goalValue ?? undefined} onChange={(v) => onChange({ goalValue: v === "" || v == null ? null : Number(v) })} size="sm" hideControls />
@@ -220,6 +221,78 @@ export function SettingsPanel({
                     <TextInput label="Titre axe Y" size="sm" value={settings.yAxisTitle ?? ""} onChange={(e) => onChange({ yAxisTitle: e.currentTarget.value || undefined })} />
                   </Group>
                 )}
+              </Stack>
+            </>
+          )}
+
+          {(caps.axisToggles || caps.yScale || caps.yRange) && (
+            <>
+              <Divider />
+              <Stack gap="sm">
+                <SectionLabel>Axes</SectionLabel>
+
+                {caps.yScale && (
+                  <Stack gap={4}>
+                    <Text fz="sm" fw={500} style={{ color: MB_COLORS.textPrimary }}>Échelle de l'axe Y</Text>
+                    <SegmentedControl
+                      fullWidth
+                      size="xs"
+                      value={settings.yScale}
+                      onChange={(v) => onChange({ yScale: v as YScale })}
+                      data={[
+                        { label: "Linéaire", value: "linear" },
+                        { label: "Logarithmique", value: "log" },
+                      ]}
+                    />
+                  </Stack>
+                )}
+
+                {caps.axisToggles && (
+                  <>
+                    <Switch size="sm" checked={settings.xAxisEnabled} label="Afficher l'axe X" onChange={(e) => onChange({ xAxisEnabled: e.currentTarget.checked })} />
+                    <Switch size="sm" checked={settings.yAxisEnabled} label="Afficher l'axe Y" onChange={(e) => onChange({ yAxisEnabled: e.currentTarget.checked })} />
+                  </>
+                )}
+
+                {caps.yRange && (
+                  <>
+                    <Switch size="sm" checked={!settings.yAutoRange} label="Plage de l'axe Y personnalisée" onChange={(e) => onChange({ yAutoRange: !e.currentTarget.checked })} />
+                    {!settings.yAutoRange && (
+                      <Group grow gap="xs">
+                        <NumberInput label="Min" size="sm" hideControls value={settings.yMin ?? undefined} onChange={(v) => onChange({ yMin: v === "" || v == null ? null : Number(v) })} />
+                        <NumberInput label="Max" size="sm" hideControls value={settings.yMax ?? undefined} onChange={(v) => onChange({ yMax: v === "" || v == null ? null : Number(v) })} />
+                      </Group>
+                    )}
+                    {settings.yAutoRange && caps.yScale && (
+                      <Switch size="sm" checked={settings.unpinFromZero} label="Ne pas commencer à zéro" onChange={(e) => onChange({ unpinFromZero: e.currentTarget.checked })} />
+                    )}
+                  </>
+                )}
+              </Stack>
+            </>
+          )}
+
+          {caps.pie && (
+            <>
+              <Divider />
+              <Stack gap="sm">
+                <SectionLabel>Camembert</SectionLabel>
+                <Switch size="sm" checked={settings.pieDonut} label="Anneau (donut)" onChange={(e) => onChange({ pieDonut: e.currentTarget.checked })} />
+                {settings.pieDonut && <Switch size="sm" checked={settings.pieShowTotal} label="Afficher le total au centre" onChange={(e) => onChange({ pieShowTotal: e.currentTarget.checked })} />}
+                <Select
+                  label="Pourcentages"
+                  data={[
+                    { value: "off", label: "Masqués" },
+                    { value: "chart", label: "Sur le graphique" },
+                    { value: "legend", label: "Dans la légende" },
+                    { value: "both", label: "Les deux" },
+                  ]}
+                  value={settings.pieShowPercent}
+                  onChange={(v) => v && onChange({ pieShowPercent: v as PiePercent })}
+                  allowDeselect={false}
+                  comboboxProps={{ withinPortal: true }}
+                  size="sm"
+                />
               </Stack>
             </>
           )}

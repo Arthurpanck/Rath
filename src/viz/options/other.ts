@@ -19,6 +19,33 @@ function categoryValuePairs(dataset: Dataset, settings: VizSettings): { name: st
 export function buildPieOption(dataset: Dataset, settings: VizSettings): EChartsOption {
   const data = categoryValuePairs(dataset, settings);
   const total = data.reduce((s, d) => s + d.value, 0);
+  const donut = settings.pieDonut;
+  const showCenterTotal = settings.pieShowTotal && donut;
+  const percentOnChart = settings.pieShowPercent === "chart" || settings.pieShowPercent === "both";
+  const percentInLegend = settings.pieShowPercent === "legend" || settings.pieShowPercent === "both";
+  const pct = (v: number) => (total ? Math.round((v / total) * 100) : 0);
+
+  const sliceLabel = percentOnChart
+    ? {
+        show: true,
+        position: "outside" as const,
+        color: MB_COLORS.textSecondary,
+        fontFamily: FONT_FAMILY,
+        fontSize: 11,
+        formatter: (p: any) => `${p.percent}%`,
+      }
+    : showCenterTotal
+      ? {
+          show: true,
+          position: "center" as const,
+          formatter: () => `{v|${nf(total)}}\n{l|TOTAL}`,
+          rich: {
+            v: { fontSize: 22, fontWeight: 700, color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
+            l: { fontSize: 11, color: MB_COLORS.textTertiary, fontFamily: FONT_FAMILY, padding: [4, 0, 0, 0] },
+          },
+        }
+      : { show: false };
+
   return {
     tooltip: {
       trigger: "item",
@@ -37,24 +64,23 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings): ECharts
           itemWidth: 10,
           itemHeight: 10,
           textStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
+          formatter: percentInLegend
+            ? (name: string) => {
+                const d = data.find((x) => x.name === name);
+                return d ? `${name}  ${pct(d.value)}%` : name;
+              }
+            : undefined,
         }
       : { show: false },
     series: [
       {
         type: "pie",
-        radius: ["55%", "78%"],
+        radius: donut ? ["55%", "78%"] : ["0%", "78%"],
         center: [settings.showLegend ? "38%" : "50%", "50%"],
         avoidLabelOverlap: true,
         itemStyle: { borderColor: MB_COLORS.white, borderWidth: 2 },
-        label: {
-          show: true,
-          position: "center",
-          formatter: () => `{v|${nf(total)}}\n{l|TOTAL}`,
-          rich: {
-            v: { fontSize: 22, fontWeight: 700, color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
-            l: { fontSize: 11, color: MB_COLORS.textTertiary, fontFamily: FONT_FAMILY, padding: [4, 0, 0, 0] },
-          },
-        },
+        label: sliceLabel,
+        labelLine: { show: percentOnChart },
         emphasis: { label: { show: true } },
         data: data.map((d, i) => ({ ...d, itemStyle: { color: seriesColor(i) } })),
       },

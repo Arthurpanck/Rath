@@ -58,6 +58,11 @@ export interface Capabilities {
   colors: boolean;
   axisTitles: boolean;
   goal: boolean;
+  trendline: boolean;
+  yScale: boolean;
+  yRange: boolean;
+  axisToggles: boolean;
+  pie: boolean;
   sankeyFields: boolean;
   pivotFields: boolean;
   mapFields: boolean;
@@ -79,6 +84,11 @@ export function settingsCapabilities(id: VizId): Capabilities {
     colors: ["bar", "line", "area", "combo", "row", "progress"].includes(id),
     axisTitles: cartesian || id === "waterfall" || id === "scatter",
     goal: ["bar", "line", "area", "combo", "gauge", "progress"].includes(id),
+    trendline: ["bar", "line", "area", "combo"].includes(id),
+    yScale: cartesian || id === "scatter",
+    yRange: cartesian || id === "scatter" || id === "waterfall",
+    axisToggles: cartesian || id === "waterfall" || id === "scatter",
+    pie: id === "pie",
     sankeyFields: id === "sankey",
     pivotFields: id === "pivot",
     mapFields: id === "map",

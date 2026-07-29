@@ -19,18 +19,39 @@ function baseGrid() {
 }
 
 function valueAxis(settings: VizSettings, name?: string, normalized = false) {
+  const isLog = settings.yScale === "log" && !normalized;
+  const customRange = !normalized && !settings.yAutoRange;
   return {
-    type: "value" as const,
+    type: isLog ? ("log" as const) : ("value" as const),
     name: settings.yAxisTitle ?? name,
-    max: normalized ? 100 : undefined,
+    max: normalized ? 100 : customRange ? settings.yMax ?? undefined : undefined,
+    min: customRange ? settings.yMin ?? undefined : undefined,
+    // "Ne pas commencer à zéro" → let ECharts fit the data range.
+    scale: settings.unpinFromZero && !normalized && !customRange,
     nameGap: CHART_STYLE.axisNameMargin + 24,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL_STYLE, formatter: normalized ? pctf : nf, margin: CHART_STYLE.axisTicksMarginY },
+    axisLabel: { ...AXIS_LABEL_STYLE, show: settings.yAxisEnabled, formatter: normalized ? pctf : nf, margin: CHART_STYLE.axisTicksMarginY },
     axisLine: { show: false },
     axisTick: { show: false },
     splitLine: { lineStyle: { color: MB_COLORS.gridLine, type: "dashed" as const } },
   };
+}
+
+// Least-squares linear regression over (x, y), ignoring null y.
+function linearFit(xs: number[], ys: (number | null)[]): { slope: number; intercept: number } | null {
+  const pts = xs.map((x, i) => [x, ys[i]] as [number, number | null]).filter((p) => p[1] != null) as [number, number][];
+  const n = pts.length;
+  if (n < 2) return null;
+  const sx = pts.reduce((s, p) => s + p[0], 0);
+  const sy = pts.reduce((s, p) => s + p[1], 0);
+  const sxx = pts.reduce((s, p) => s + p[0] * p[0], 0);
+  const sxy = pts.reduce((s, p) => s + p[0] * p[1], 0);
+  const denom = n * sxx - sx * sx;
+  if (denom === 0) return null;
+  const slope = (n * sxy - sx * sy) / denom;
+  const intercept = (sy - slope * sx) / n;
+  return { slope, intercept };
 }
 
 function categoryAxis(categories: Cell[], settings: VizSettings, name?: string) {
@@ -41,7 +62,7 @@ function categoryAxis(categories: Cell[], settings: VizSettings, name?: string) 
     nameGap: CHART_STYLE.axisNameMargin + 22,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL_STYLE, margin: CHART_STYLE.axisTicksMarginX },
+    axisLabel: { ...AXIS_LABEL_STYLE, show: settings.xAxisEnabled, margin: CHART_STYLE.axisTicksMarginX },
     axisTick: { show: false, alignWithLabel: true },
     axisLine: { lineStyle: { color: MB_COLORS.borderStrong } },
   };
@@ -55,7 +76,7 @@ function timeAxis(timestamps: number[], settings: VizSettings, name?: string) {
     nameGap: CHART_STYLE.axisNameMargin + 22,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL_STYLE, margin: CHART_STYLE.axisTicksMarginX, formatter: (v: number) => formatDate(v, g) },
+    axisLabel: { ...AXIS_LABEL_STYLE, show: settings.xAxisEnabled, margin: CHART_STYLE.axisTicksMarginX, formatter: (v: number) => formatDate(v, g) },
     axisTick: { show: false },
     axisLine: { lineStyle: { color: MB_COLORS.borderStrong } },
   };
@@ -152,6 +173,30 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       markLine: i === 0 ? goalMarkLine(settings) : undefined,
     } as SeriesOption;
   });
+
+  // Trend lines (linear regression) per series — like Metabase's show_trendline.
+  if (settings.showTrendline && !normalized) {
+    const xs = isDate ? frame.timestamps! : frame.categories.map((_, i) => i);
+    frame.series.forEach((s, i) => {
+      const fit = linearFit(xs, s.values);
+      if (!fit) return;
+      const color = colorFor(settings, s.key, i);
+      const data = xs.map((x, ci) => {
+        const y = fit.slope * x + fit.intercept;
+        return isDate ? ([frame.timestamps![ci], y] as [number, number]) : (y as number);
+      });
+      series.push({
+        name: `Tendance · ${s.name}`,
+        type: "line",
+        data,
+        symbol: "none",
+        lineStyle: { color, width: 1.5, type: "dashed" },
+        z: 5,
+        silent: true,
+        tooltip: { show: false },
+      } as SeriesOption);
+    });
+  }
 
   return {
     grid: { ...baseGrid(), top: frame.series.length >= 2 && settings.showLegend ? 36 : 24 },

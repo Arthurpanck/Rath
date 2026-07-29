@@ -4,6 +4,8 @@ import { analyzeShape } from "../data/types";
 export type Stacking = "none" | "stacked" | "normalized";
 export type Aggregation = "sum" | "mean" | "count" | "min" | "max" | "distinct";
 export type SortOrder = "none" | "dim-asc" | "dim-desc" | "value-asc" | "value-desc";
+export type YScale = "linear" | "log";
+export type PiePercent = "off" | "legend" | "chart" | "both";
 
 // User-editable visualization settings, mirroring the knobs in Metabase's
 // settings sidebar (Data + Display).
@@ -26,6 +28,21 @@ export interface VizSettings {
   xAxisTitle?: string;
   yAxisTitle?: string;
   goalValue?: number | null;
+
+  // --- axes & display (cartesian), mirroring Metabase's Axes/Display tabs ---
+  showTrendline: boolean;
+  yScale: YScale;
+  yAutoRange: boolean;
+  yMin?: number | null;
+  yMax?: number | null;
+  xAxisEnabled: boolean;
+  yAxisEnabled: boolean;
+  unpinFromZero: boolean;
+
+  // --- pie ---
+  pieShowTotal: boolean;
+  pieShowPercent: PiePercent;
+  pieDonut: boolean;
 
   // --- viz-specific field pickers ---
   /** Sankey: source & target dimension columns. */
@@ -50,6 +67,17 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     showLegend: true,
     colors: {},
     goalValue: null,
+    showTrendline: false,
+    yScale: "linear",
+    yAutoRange: true,
+    yMin: null,
+    yMax: null,
+    xAxisEnabled: true,
+    yAxisEnabled: true,
+    unpinFromZero: false,
+    pieShowTotal: true,
+    pieShowPercent: "off",
+    pieDonut: true,
   };
 }
 
