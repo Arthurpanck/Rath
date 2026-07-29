@@ -3,6 +3,7 @@ import type { Dataset } from "../../data/types";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
 import { buildFrame } from "../frame";
+import { formatNumber } from "../format";
 import { ACCENT_COLORS, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
 const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
@@ -92,31 +93,45 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings): ECharts
 export function buildGaugeOption(dataset: Dataset, settings: VizSettings): EChartsOption {
   const metric = resolveShape(dataset, settings).metrics[0];
   const value = Number(dataset.rows[0]?.[metric?.index]) || 0;
-  const max = settings.goalValue && settings.goalValue > 0 ? settings.goalValue : Math.max(value * 1.5, 100);
+  const ranges = settings.gaugeRanges && settings.gaugeRanges.length > 0 ? settings.gaugeRanges : null;
+
+  const min = ranges ? ranges[0].min : 0;
+  const max = ranges
+    ? ranges[ranges.length - 1].max
+    : settings.goalValue && settings.goalValue > 0
+      ? settings.goalValue
+      : Math.max(value * 1.5, 100);
+
+  // Colored segments from ranges, or a single progress arc.
+  const axisLineColor: [number, string][] = ranges
+    ? ranges.map((r) => [(r.max - min) / (max - min || 1), r.color] as [number, string])
+    : [[1, MB_COLORS.border]];
+  const fmt = (v: number) => formatNumber(v, settings.numberFormat);
+
   return {
     series: [
       {
         type: "gauge",
         startAngle: 200,
         endAngle: -20,
-        min: 0,
+        min,
         max,
-        progress: { show: true, width: 18, itemStyle: { color: MB_COLORS.brand } },
-        axisLine: { lineStyle: { width: 18, color: [[1, MB_COLORS.border]] } },
+        progress: { show: !ranges, width: 18, itemStyle: { color: MB_COLORS.brand } },
+        axisLine: { lineStyle: { width: 18, color: axisLineColor } },
         axisTick: { show: false },
         splitLine: { length: 10, lineStyle: { color: MB_COLORS.borderStrong } },
-        axisLabel: { color: MB_COLORS.textTertiary, fontSize: 10, distance: 14, formatter: (v: number) => nf(Math.round(v)) },
-        pointer: { show: false },
+        axisLabel: { color: MB_COLORS.textTertiary, fontSize: 10, distance: 14, formatter: (v: number) => fmt(Math.round(v)) },
+        pointer: ranges ? { show: true, width: 5, itemStyle: { color: MB_COLORS.textSecondary } } : { show: false },
         anchor: { show: false },
         title: { show: false },
         detail: {
           valueAnimation: true,
-          offsetCenter: [0, "10%"],
+          offsetCenter: [0, ranges ? "35%" : "10%"],
           fontSize: 30,
           fontWeight: 700,
           fontFamily: FONT_FAMILY,
           color: MB_COLORS.textPrimary,
-          formatter: (v: number) => nf(Math.round(v)),
+          formatter: (v: number) => fmt(v),
         },
         data: [{ value }],
       },
@@ -145,7 +160,7 @@ export function buildProgressOption(dataset: Dataset, settings: VizSettings): EC
         type: "text",
         left: "center",
         top: "20%",
-        style: { text: `${nf(value)} / ${nf(goal)}  (${Math.round(pct * 100)}%)`, fontSize: 16, fontWeight: 700, fill: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
+        style: { text: `${formatNumber(value, settings.numberFormat)} / ${formatNumber(goal, settings.numberFormat)}  (${Math.round(pct * 100)}%)`, fontSize: 16, fontWeight: 700, fill: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
       },
     ],
     textStyle: { fontFamily: FONT_FAMILY },

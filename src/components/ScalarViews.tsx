@@ -2,15 +2,16 @@ import { Text } from "@mantine/core";
 import type { Column, Dataset } from "../data/types";
 import { analyzeShape } from "../data/types";
 import type { VizSettings } from "../viz/settings";
-import { resolveShape } from "../viz/settings";
+import { findColumn, resolveShape } from "../viz/settings";
+import { formatNumber } from "../viz/format";
 import { MB_COLORS } from "../viz/options/constants";
 
 const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
 
-export function ScalarView({ dataset, column }: { dataset: Dataset; column?: Column }) {
-  const metric = column ?? analyzeShape(dataset).metrics[0];
+export function ScalarView({ dataset, settings, column }: { dataset: Dataset; settings: VizSettings; column?: Column }) {
+  const metric = findColumn(dataset, settings.scalarField) ?? column ?? analyzeShape(dataset).metrics[0];
   const raw = metric ? Number(dataset.rows[0]?.[metric.index]) : NaN;
-  const value = isNaN(raw) ? "—" : nf(raw);
+  const value = isNaN(raw) ? "—" : formatNumber(raw, settings.numberFormat);
   return (
     <div style={{ textAlign: "center" }}>
       <Text fw={700} style={{ fontSize: 64, lineHeight: 1.05, color: MB_COLORS.textPrimary }}>

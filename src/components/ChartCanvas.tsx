@@ -75,7 +75,7 @@ export function ChartCanvas({
   if (vizId === "pivot") return <div style={wrap}><PivotTableView dataset={dataset} settings={settings} /></div>;
   if (vizId === "scalar") {
     const m = resolveShape(dataset, settings).metrics[0];
-    return <div style={wrap}><ScalarView dataset={dataset} column={m} /></div>;
+    return <div style={wrap}><ScalarView dataset={dataset} settings={settings} column={m} /></div>;
   }
   if (vizId === "smartscalar") return <div style={wrap}><TrendView dataset={dataset} settings={settings} /></div>;
   if (!isEChartsViz(vizId)) return <div style={wrap}><UnimplementedView vizId={vizId} /></div>;

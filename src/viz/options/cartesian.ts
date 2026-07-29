@@ -4,6 +4,7 @@ import { getMetrics } from "../../data/types";
 import { formatDate, pickGranularity } from "../../data/dates";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
+import { formatCompact } from "../format";
 import { buildFrame, type Cell, type Frame } from "../frame";
 import { AXIS_LABEL_STYLE, CHART_STYLE, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
@@ -13,6 +14,8 @@ const nf = (v: number) => (v == null ? "" : Intl.NumberFormat("fr-FR").format(v)
 const pctf = (v: number) => (v == null ? "" : `${Math.round(v)} %`);
 
 const colorFor = (settings: VizSettings, key: string, i: number): string => settings.colors[key] ?? seriesColor(i);
+// Data-label number formatting per "Mise en forme automatique" (Auto/Compact/Complet).
+const labelNum = (settings: VizSettings, v: number) => (settings.labelFormatting === "compact" ? formatCompact(v) : nf(v));
 
 function baseGrid() {
   return { left: 56, right: 24, top: 24, bottom: 48, containLabel: false };
@@ -23,7 +26,7 @@ function valueAxis(settings: VizSettings, name?: string, normalized = false) {
   const customRange = !normalized && !settings.yAutoRange;
   return {
     type: isLog ? ("log" as const) : ("value" as const),
-    name: settings.yAxisTitle ?? name,
+    name: settings.yShowTitle ? settings.yAxisTitle ?? name : undefined,
     max: normalized ? 100 : customRange ? settings.yMax ?? undefined : undefined,
     min: customRange ? settings.yMin ?? undefined : undefined,
     // "Ne pas commencer à zéro" → let ECharts fit the data range.
@@ -57,7 +60,7 @@ function linearFit(xs: number[], ys: (number | null)[]): { slope: number; interc
 function categoryAxis(categories: Cell[], settings: VizSettings, name?: string) {
   return {
     type: "category" as const,
-    name: settings.xAxisTitle ?? name,
+    name: settings.xShowTitle ? settings.xAxisTitle ?? name : undefined,
     data: categories as (string | number)[],
     nameGap: CHART_STYLE.axisNameMargin + 22,
     nameLocation: "middle" as const,
@@ -72,7 +75,7 @@ function timeAxis(timestamps: number[], settings: VizSettings, name?: string) {
   const g = pickGranularity(timestamps);
   return {
     type: "time" as const,
-    name: settings.xAxisTitle ?? name,
+    name: settings.xShowTitle ? settings.xAxisTitle ?? name : undefined,
     nameGap: CHART_STYLE.axisNameMargin + 22,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
@@ -118,7 +121,7 @@ function dataLabel(settings: VizSettings, normalized: boolean, position: "top" |
     fontWeight: 700,
     formatter: (p: { value: unknown }) => {
       const v = Array.isArray(p.value) ? Number(p.value[1]) : Number(p.value);
-      return normalized ? pctf(v) : nf(v);
+      return normalized ? pctf(v) : labelNum(settings, v);
     },
   };
 }
