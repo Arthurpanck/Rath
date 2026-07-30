@@ -109,14 +109,25 @@ export function buildMapOption(dataset: Dataset, settings: VizSettings): ECharts
     return emptyMessage("La carte nécessite une colonne de localisation (nom de pays ou code ISO à 2 lettres).");
   }
 
-  // Aggregate metric by country.
-  const byCountry = new Map<string, number>();
+  // Aggregate metric by country using the chosen aggregation.
+  const buckets = new Map<string, number[]>();
   for (const r of dataset.rows) {
     const name = toCountryName(r[location.index]);
-    const v = metric ? Number(r[metric.index]) || 0 : 1;
-    byCountry.set(name, (byCountry.get(name) ?? 0) + v);
+    const v = metric ? Number(r[metric.index]) : 1;
+    if (!buckets.has(name)) buckets.set(name, []);
+    buckets.get(name)!.push(isNaN(v) ? 0 : v);
   }
-  const data = [...byCountry.entries()].map(([name, value]) => ({ name, value }));
+  const agg = settings.aggregation;
+  const reduce = (vals: number[]): number => {
+    if (agg === "count") return vals.length;
+    if (agg === "distinct") return new Set(vals).size;
+    if (vals.length === 0) return 0;
+    if (agg === "mean") return vals.reduce((s, v) => s + v, 0) / vals.length;
+    if (agg === "min") return Math.min(...vals);
+    if (agg === "max") return Math.max(...vals);
+    return vals.reduce((s, v) => s + v, 0);
+  };
+  const data = [...buckets.entries()].map(([name, vals]) => ({ name, value: reduce(vals) }));
   const max = Math.max(1, ...data.map((d) => d.value));
 
   return {

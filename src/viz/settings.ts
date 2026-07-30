@@ -10,6 +10,11 @@ export type LabelFormatting = "auto" | "compact" | "full";
 export type XScale = "auto" | "ordinal" | "linear" | "timeseries";
 export type NumberStyle = "normal" | "percent" | "scientific" | "currency";
 export type CurrencyStyle = "symbol" | "code" | "name";
+export type CurrencyPlacement = "header" | "cell";
+export type SeparatorStyle = "comma-dot" | "space-comma" | "dot-comma" | "none-dot" | "apos-dot";
+export type PieLabelDisplay = "auto" | "on" | "off";
+export type PieValueFormat = "percent" | "value" | "both";
+export type MapRegion = "world";
 
 export interface GaugeRange {
   color: string;
@@ -24,10 +29,19 @@ export type LineShape = "straight" | "curved" | "stepped";
 export type LineDash = "solid" | "dashed" | "dotted";
 export type LineSize = "S" | "M" | "L";
 export type MarkerMode = "auto" | "on" | "off";
+export type MissingValues = "interpolate" | "zero" | "none";
 export type FillOpacity = "auto" | "opaque" | "transparent";
 export type BarWidth = "xs" | "normal" | "wide" | "xl";
 
-// Per-series options edited from the "…" series-settings panel (differs per chart).
+/** Per-series number formatting (popover "Mise en forme" tab). */
+export interface SeriesFormat {
+  decimals?: number | null;
+  multiplyBy?: number | null;
+  prefix?: string;
+  suffix?: string;
+}
+
+// Per-series options edited from the "…" popover (Style / Mise en forme).
 export interface SeriesOpts {
   name?: string;
   axis?: AxisPosition;
@@ -36,10 +50,12 @@ export interface SeriesOpts {
   lineDash?: LineDash;
   lineSize?: LineSize;
   markers?: MarkerMode;
+  missing?: MissingValues;
   areaOpacity?: FillOpacity;
   barWidth?: BarWidth;
   showValues?: boolean;
   trendline?: boolean;
+  fmt?: SeriesFormat;
 }
 
 // Number-formatting options (Metabase "Mise en forme"), reusable across the
@@ -48,6 +64,8 @@ export interface NumberFormat {
   style: NumberStyle;
   currency: string; // ISO code, e.g. "EUR"
   currencyStyle: CurrencyStyle;
+  currencyPlacement: CurrencyPlacement;
+  separator: SeparatorStyle;
   decimals?: number | null;
   multiplyBy?: number | null;
   prefix?: string;
@@ -55,15 +73,28 @@ export interface NumberFormat {
 }
 
 export function defaultNumberFormat(): NumberFormat {
-  return { style: "normal", currency: "EUR", currencyStyle: "symbol", decimals: null, multiplyBy: null, prefix: "", suffix: "" };
+  return {
+    style: "normal",
+    currency: "EUR",
+    currencyStyle: "symbol",
+    currencyPlacement: "cell",
+    separator: "space-comma",
+    decimals: null,
+    multiplyBy: null,
+    prefix: "",
+    suffix: "",
+  };
 }
 
+/** One "Comparaisons" entry for the Tendance (smartscalar) viz. */
+export type ComparisonType = "previous" | "first" | "average";
+
 // User-editable visualization settings, mirroring the knobs in Metabase's
-// settings sidebar (Data + Display).
+// settings sidebar (Données / Affichage / Axes and per-viz variants).
 export interface VizSettings {
   /** X-axis / grouping column (by name). */
   dimension?: string;
-  /** Y-axis series columns (by name). */
+  /** Y-axis series columns (by name), in display order. */
   metrics?: string[];
   /** Optional 2nd dimension that splits a single metric into series. */
   breakout?: string;
@@ -76,7 +107,7 @@ export interface VizSettings {
   showLegend: boolean;
   /** Per-series color override, keyed by series key (column or breakout value). */
   colors: Record<string, string>;
-  /** Per-series options from the "…" panel, keyed by series key. */
+  /** Per-series options from the "…" popover, keyed by series key. */
   series: Record<string, SeriesOpts>;
   xAxisTitle?: string;
   yAxisTitle?: string;
@@ -84,20 +115,22 @@ export interface VizSettings {
 
   // --- Affichage (cartesian) ---
   showTrendline: boolean;
-  stackSeries: boolean; // "Empiler les séries" companion to stacking
-  labelFormatting: LabelFormatting; // "Mise en forme automatique" Auto/Compact/Complet
+  stackSeries: boolean; // "Empiler les séries"
+  showStackTotals: boolean; // "Afficher les totaux d'empilement"
+  labelFormatting: LabelFormatting; // "Mise en forme automatique"
 
   // --- Axes (cartesian) ---
-  xShowTitle: boolean; // "Afficher le libellé" (X)
-  xShowLine: boolean; // "Afficher les lignes et les graduations" (X)
-  xScale: XScale; // "Échelle" (X)
+  xShowTitle: boolean;
+  xShowLine: boolean;
+  xScale: XScale;
   yShowTitle: boolean;
-  yShowLine: boolean; // maps to yAxisEnabled visual
+  yShowLine: boolean;
   yScale: YScale;
   yAutoRange: boolean;
   yMin?: number | null;
   yMax?: number | null;
-  unpinFromZero: boolean; // "Détacher de zéro"
+  ySplitNumber?: number | null; // "Nombre de graduations"
+  unpinFromZero: boolean;
   // legacy aliases kept in sync for existing builder code
   xAxisEnabled: boolean;
   yAxisEnabled: boolean;
@@ -106,6 +139,10 @@ export interface VizSettings {
   pieShowTotal: boolean;
   pieShowPercent: PiePercent;
   pieDonut: boolean;
+  pieLabelDisplay: PieLabelDisplay; // "Affichage des étiquettes"
+  pieValueFormat: PieValueFormat; // "Format des valeurs"
+  innerRing?: string; // "Anneau intérieur"
+  outerRing?: string; // "Anneau extérieur"
 
   // --- number formatting (scalar / gauge / progress) ---
   numberFormat: NumberFormat;
@@ -115,20 +152,23 @@ export interface VizSettings {
   gaugeRanges?: GaugeRange[];
 
   // --- funnel ---
-  stepField?: string; // "Colonne avec les étapes"
+  stepField?: string;
+
   // --- waterfall ---
-  showTotalColumn?: boolean; // "Afficher la colonne de total"
+  showTotalColumn: boolean; // "Afficher la colonne de total"
+  increaseColor: string; // "Augmentation"
+  decreaseColor: string; // "Diminution"
+
+  // --- smartscalar ---
+  comparisons: ComparisonType[];
 
   // --- viz-specific field pickers ---
-  /** Sankey: source & target dimension columns. */
   sourceField?: string;
   targetField?: string;
-  /** Pivot: row & column dimensions. */
   rowField?: string;
   colField?: string;
-  /** Map: location column (country name or ISO-A2). */
   locationField?: string;
-  /** Scatter: optional metric driving bubble size. */
+  mapRegion: MapRegion; // "Carte par région"
   bubbleField?: string;
 }
 
@@ -147,6 +187,7 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     goalValue: null,
     showTrendline: false,
     stackSeries: false,
+    showStackTotals: false,
     labelFormatting: "auto",
     xShowTitle: true,
     xShowLine: true,
@@ -157,15 +198,22 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     yAutoRange: true,
     yMin: null,
     yMax: null,
+    ySplitNumber: null,
     unpinFromZero: false,
     xAxisEnabled: true,
     yAxisEnabled: true,
     pieShowTotal: true,
     pieShowPercent: "off",
     pieDonut: true,
+    pieLabelDisplay: "auto",
+    pieValueFormat: "percent",
     numberFormat: defaultNumberFormat(),
     gaugeRanges: undefined,
     showTotalColumn: true,
+    increaseColor: "#88BF4D",
+    decreaseColor: "#EF8C8C",
+    comparisons: ["previous"],
+    mapRegion: "world",
   };
 }
 
@@ -182,4 +230,24 @@ export function resolveShape(dataset: Dataset, settings: VizSettings): { dimensi
     .filter((c): c is Column => !!c && c.index !== dimension.index);
   const metrics = chosen.length > 0 ? chosen : auto.metrics.filter((m) => m.index !== dimension.index);
   return { dimension, metrics };
+}
+
+/** Aggregate a whole column with the chosen aggregation (single-value vizs). */
+export function aggregateColumn(dataset: Dataset, col: Column | undefined, agg: Aggregation): number {
+  if (!col) return 0;
+  const raw = dataset.rows.map((r) => r[col.index]);
+  if (agg === "count") return raw.length;
+  if (agg === "distinct") return new Set(raw.map((v) => String(v))).size;
+  const nums = raw.map((v) => Number(v)).filter((v) => !isNaN(v));
+  if (nums.length === 0) return 0;
+  switch (agg) {
+    case "mean":
+      return nums.reduce((s, v) => s + v, 0) / nums.length;
+    case "min":
+      return Math.min(...nums);
+    case "max":
+      return Math.max(...nums);
+    default:
+      return nums.reduce((s, v) => s + v, 0);
+  }
 }

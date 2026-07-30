@@ -4,7 +4,8 @@ import { getMetrics } from "../../data/types";
 import { formatDate, pickGranularity } from "../../data/dates";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
-import { formatCompact, nf2 } from "../format";
+import { formatCompact, formatSeriesValue, nf2 } from "../format";
+import type { SeriesOpts } from "../settings";
 import { buildFrame, type Cell, type Frame } from "../frame";
 import { AXIS_LABEL_STYLE, CHART_STYLE, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
@@ -31,6 +32,7 @@ function valueAxis(settings: VizSettings, name?: string, normalized = false) {
     min: customRange ? settings.yMin ?? undefined : undefined,
     // "Ne pas commencer à zéro" → let ECharts fit the data range.
     scale: settings.unpinFromZero && !normalized && !customRange,
+    splitNumber: settings.ySplitNumber ?? undefined,
     nameGap: CHART_STYLE.axisNameMargin + 24,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
@@ -110,8 +112,10 @@ function legendCfg(frame: Frame, settings: VizSettings): EChartsOption["legend"]
   };
 }
 
-function dataLabel(settings: VizSettings, normalized: boolean, position: "top" | "right" = "top") {
-  if (!settings.showValues) return { show: false };
+function dataLabel(settings: VizSettings, normalized: boolean, position: "top" | "right" = "top", opts?: SeriesOpts) {
+  const show = settings.showValues || opts?.showValues;
+  if (!show) return { show: false };
+  const compact = settings.labelFormatting === "compact";
   return {
     show: true,
     position,
@@ -121,7 +125,9 @@ function dataLabel(settings: VizSettings, normalized: boolean, position: "top" |
     fontWeight: 700,
     formatter: (p: { value: unknown }) => {
       const v = Array.isArray(p.value) ? Number(p.value[1]) : Number(p.value);
-      return normalized ? pctf(v) : labelNum(settings, v);
+      if (normalized) return pctf(v);
+      // Per-series "Mise en forme" (popover) wins over the global setting.
+      return opts?.fmt ? formatSeriesValue(v, opts.fmt, compact) : labelNum(settings, v);
     },
   };
 }
@@ -164,18 +170,21 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
     const asLine = disp === "line" || disp === "area";
     const asArea = disp === "area";
     const color = colorFor(settings, s.key, i);
+    // "Remplacer les valeurs manquantes par": zéro | interpolé | aucun
+    const missing = o.missing ?? "interpolate";
     const values = s.values.map((raw, ci) => {
-      if (raw == null) return isDate ? ([frame.timestamps![ci], null] as [number, null]) : null;
-      const v = normalized ? (rowTotals[ci] ? (raw / rowTotals[ci]) * 100 : 0) : raw;
+      const filled = raw == null && missing === "zero" ? 0 : raw;
+      if (filled == null) return isDate ? ([frame.timestamps![ci], null] as [number, null]) : null;
+      const v = normalized ? (rowTotals[ci] ? (filled / rowTotals[ci]) * 100 : 0) : filled;
       return isDate ? ([frame.timestamps![ci], v] as [number, number]) : (v as number);
     });
     const areaOpacity = o.areaOpacity === "opaque" ? 0.9 : o.areaOpacity === "transparent" ? 0.12 : CHART_STYLE.opacity.area;
     const showSym = o.markers === "on" ? true : o.markers === "off" ? false : undefined;
-    const seriesShowValues = settings.showValues || o.showValues;
     return {
       name: o.name ?? s.name,
       type: asLine ? "line" : "bar",
       yAxisIndex: o.axis === "right" ? 1 : 0,
+      connectNulls: missing === "interpolate",
       data: values,
       stack: stacked && (!asLine || kind !== "combo") ? "stack" : undefined,
       itemStyle: { color, borderRadius: asLine ? 0 : [2, 2, 0, 0] },
@@ -187,10 +196,34 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       step: o.lineShape === "stepped" ? ("end" as const) : undefined,
       lineStyle: asLine ? { width: LINE_WIDTH[o.lineSize ?? "M"] ?? 2, color, type: o.lineDash ?? "solid" } : undefined,
       areaStyle: asArea ? { color, opacity: areaOpacity } : undefined,
-      label: dataLabel({ ...settings, showValues: !!seriesShowValues }, normalized),
+      label: dataLabel(settings, normalized, "top", o),
       markLine: i === 0 ? goalMarkLine(settings) : undefined,
     } as SeriesOption;
   });
+
+  // "Afficher les totaux d'empilement": an invisible bar carrying the stack sum
+  // so ECharts can place one label above each stacked column.
+  if (stacked && settings.showStackTotals && !normalized) {
+    series.push({
+      name: "Total",
+      type: "bar",
+      stack: "stack",
+      data: rowTotals.map((_t, ci) => (isDate ? ([frame.timestamps![ci], 0] as [number, number]) : 0)),
+      itemStyle: { color: "transparent" },
+      emphasis: { itemStyle: { color: "transparent" } },
+      silent: true,
+      tooltip: { show: false },
+      label: {
+        show: true,
+        position: "top",
+        color: MB_COLORS.textSecondary,
+        fontFamily: FONT_FAMILY,
+        fontSize: 11,
+        fontWeight: 700,
+        formatter: (p: { dataIndex: number }) => labelNum(settings, rowTotals[p.dataIndex]),
+      },
+    } as SeriesOption);
+  }
 
   // Trend lines (linear regression), global or per-series (Metabase show_trendline).
   if (!normalized) {
@@ -235,15 +268,19 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
 
 function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
   const stacked = settings.stacking !== "none";
-  const series: SeriesOption[] = frame.series.map((s, i) => ({
-    name: s.name,
-    type: "bar",
-    data: s.values as (number | null)[],
-    stack: stacked ? "stack" : undefined,
-    itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
-    barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
-    label: dataLabel(settings, false, "right"),
-  }));
+  const series: SeriesOption[] = frame.series.map((s, i) => {
+    const o = settings.series[s.key] ?? {};
+    return {
+      name: o.name ?? s.name,
+      type: "bar",
+      xAxisIndex: 0,
+      data: s.values as (number | null)[],
+      stack: stacked ? "stack" : undefined,
+      itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
+      barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
+      label: dataLabel(settings, false, "right", o),
+    } as SeriesOption;
+  });
   return {
     grid: { ...baseGrid(), left: 120 },
     tooltip: tooltipCfg(),
@@ -311,16 +348,25 @@ function buildWaterfall(frame: Frame, settings: VizSettings): EChartsOption {
     running += v;
   }
 
+  // "Afficher la colonne de total": a final bar with the cumulative total.
+  const categories = [...frame.categories];
+  if (settings.showTotalColumn) {
+    categories.push("Total");
+    bases.push(0);
+    positives.push(running >= 0 ? running : "-");
+    negatives.push(running < 0 ? -running : "-");
+  }
+
   const series: SeriesOption[] = [
     { type: "bar", stack: "wf", itemStyle: { color: "transparent" }, emphasis: { itemStyle: { color: "transparent" } }, data: bases, silent: true },
-    { type: "bar", stack: "wf", name: "Hausse", itemStyle: { color: "#88BF4D", borderRadius: [2, 2, 0, 0] }, data: positives, label: dataLabel(settings, false) },
-    { type: "bar", stack: "wf", name: "Baisse", itemStyle: { color: "#EF8C8C", borderRadius: [2, 2, 0, 0] }, data: negatives, label: dataLabel(settings, false) },
+    { type: "bar", stack: "wf", name: "Augmentation", itemStyle: { color: settings.increaseColor, borderRadius: [2, 2, 0, 0] }, data: positives, label: dataLabel(settings, false) },
+    { type: "bar", stack: "wf", name: "Diminution", itemStyle: { color: settings.decreaseColor, borderRadius: [2, 2, 0, 0] }, data: negatives, label: dataLabel(settings, false) },
   ];
 
   return {
     grid: baseGrid(),
     tooltip: tooltipCfg(),
-    xAxis: categoryAxis(frame.categories, settings, frame.dimension.display_name),
+    xAxis: categoryAxis(categories, settings, frame.dimension.display_name),
     yAxis: valueAxis(settings),
     series,
     textStyle: { fontFamily: FONT_FAMILY },
