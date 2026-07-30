@@ -70,7 +70,7 @@ body {
 /* The "Résumer" header button, once a summary is active. */
 .mantine-Button-root[data-active="true"] {
   background: var(--mantine-color-summarize-0);
-  border-color: var(--mantine-color-summarize-6);
+  border-color: var(--mantine-color-summarize-filled);
   color: var(--mantine-color-summarize-8);
 }
 

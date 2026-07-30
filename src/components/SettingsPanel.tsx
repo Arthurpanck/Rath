@@ -868,6 +868,7 @@ function AffichageTab({ vizId, settings, onChange, isCartesian, allCols }: any) 
 
       {vizId === "treemap" && (
         <>
+          <Switch size="sm" checked={settings.treemapShowPercent} label="Afficher les pourcentages" onChange={(e) => onChange({ treemapShowPercent: e.currentTarget.checked })} />
           <Switch size="sm" checked={settings.treemapShowLeafLabels} label="Afficher les libellés des feuilles" onChange={(e) => onChange({ treemapShowLeafLabels: e.currentTarget.checked })} />
           <Switch size="sm" checked={settings.treemapShowLeafValues} label="Afficher les valeurs des feuilles" onChange={(e) => onChange({ treemapShowLeafValues: e.currentTarget.checked })} />
           <Switch size="sm" checked={settings.treemapShowParentLabels} label="Afficher les libellés des parents" onChange={(e) => onChange({ treemapShowParentLabels: e.currentTarget.checked })} />

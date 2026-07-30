@@ -186,6 +186,8 @@ export interface VizSettings {
   /** Grouping values the user removed from the chart (the "×" on each row). */
   hiddenValues: string[];
   treemapShowLeafLabels: boolean;
+  /** Share of the total, next to every value — shown by default in Metabase. */
+  treemapShowPercent: boolean;
   treemapShowLeafValues: boolean;
   treemapShowParentLabels: boolean;
   treemapShowParentValues: boolean;
@@ -256,9 +258,10 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     scatterShowLabels: false,
     hiddenValues: [],
     treemapShowLeafLabels: true,
-    treemapShowLeafValues: false,
+    treemapShowPercent: true,
+    treemapShowLeafValues: true,
     treemapShowParentLabels: true,
-    treemapShowParentValues: false,
+    treemapShowParentValues: true,
     colorRules: [],
     tooltipColumns: [],
     comparisons: ["previous"],

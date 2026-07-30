@@ -44,7 +44,7 @@ function PickRow({ label, onClick, active, col }: { label: string; onClick: () =
         display: "flex",
         alignItems: "center",
         gap: 8,
-        background: active ? "var(--mantine-color-summarize-6)" : "transparent",
+        background: active ? "var(--mantine-color-summarize-filled)" : "transparent",
       }}
     >
       {col && <TypeGlyph col={col} active={active} />}
@@ -176,8 +176,8 @@ export function SummarizeSidebar({
                   mx="lg"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, background: MB_COLORS.bgLight, border: `1px solid ${MB_COLORS.border}` }}
                 >
-                  <Text fz="lg" fw={700} style={{ color: "var(--mantine-color-summarize-6)", lineHeight: 1 }}>+</Text>
-                  <Text fz="sm" fw={700} style={{ color: "var(--mantine-color-summarize-6)" }}>Ajouter une fonction ou une métrique</Text>
+                  <Text fz="lg" fw={700} style={{ color: "var(--mantine-color-summarize-filled)", lineHeight: 1 }}>+</Text>
+                  <Text fz="sm" fw={700} style={{ color: "var(--mantine-color-summarize-filled)" }}>Ajouter une fonction ou une métrique</Text>
                 </UnstyledButton>
               </Popover.Target>
               <Popover.Dropdown p={0}>
@@ -189,7 +189,7 @@ export function SummarizeSidebar({
             {summarize.aggregations.map((a, i) => (
               <Popover key={i} opened={editing === i} onChange={(o) => setEditing(o ? i : null)} position="bottom-start" shadow="lg" withinPortal>
                 <Popover.Target>
-                  <Group gap={2} wrap="nowrap" style={{ background: "var(--mantine-color-summarize-6)", borderRadius: 6, padding: "3px 4px 3px 12px" }}>
+                  <Group gap={2} wrap="nowrap" style={{ background: "var(--mantine-color-summarize-filled)", borderRadius: 6, padding: "3px 4px 3px 12px" }}>
                     <UnstyledButton onClick={() => setEditing(i)}>
                       <Text fz="sm" fw={700} style={{ color: "#fff" }}>{describeAggregation(dataset, a)}</Text>
                     </UnstyledButton>
@@ -210,7 +210,7 @@ export function SummarizeSidebar({
                 <UnstyledButton
                   aria-label="Ajouter une agrégation"
                   onClick={() => setAddOpen((o) => !o)}
-                  style={{ display: "flex", alignItems: "center", padding: "4px 6px", color: "var(--mantine-color-summarize-6)" }}
+                  style={{ display: "flex", alignItems: "center", padding: "4px 6px", color: "var(--mantine-color-summarize-filled)" }}
                 >
                   <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                 </UnstyledButton>
@@ -238,6 +238,7 @@ export function SummarizeSidebar({
             <Text fz="xs" fw={700} mb={4} title={sourceName} style={{ color: MB_COLORS.textTertiary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
               {sourceName}
             </Text>
+            <Stack gap={4}>
             {groupable.map((c) => {
               const active = summarize.breakouts.includes(c.name);
               const options = bucketsFor(c);
@@ -253,7 +254,7 @@ export function SummarizeSidebar({
                     // Metabase's dimension rows are a fixed 34px tall, and the
                     // green highlight covers exactly that box.
                     height: 34,
-                    background: active ? "var(--mantine-color-summarize-6)" : "transparent",
+                    background: active ? "var(--mantine-color-summarize-filled)" : "transparent",
                   }}
                 >
                   <UnstyledButton
@@ -301,13 +302,14 @@ export function SummarizeSidebar({
                       <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" /></svg>
                     </UnstyledButton>
                   ) : (
-                    <UnstyledButton className="mb-dim-add" aria-label="Ajouter une dimension" onClick={() => toggleBreakout(c)} style={{ display: "flex", padding: "0 10px", color: "var(--mantine-color-summarize-6)" }}>
+                    <UnstyledButton className="mb-dim-add" aria-label="Ajouter une dimension" onClick={() => toggleBreakout(c)} style={{ display: "flex", padding: "0 10px", color: "var(--mantine-color-summarize-filled)" }}>
                       <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
                     </UnstyledButton>
                   )}
                 </Box>
               );
             })}
+            </Stack>
           </Stack>
           </>
           )}
