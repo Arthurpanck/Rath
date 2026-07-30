@@ -3,7 +3,7 @@ import type { Dataset } from "../../data/types";
 import type { VizId } from "../registry";
 import type { VizSettings } from "../settings";
 import { buildCartesianOption } from "./cartesian";
-import { buildBoxplotOption, buildFunnelOption, buildGaugeOption, buildPieOption, buildProgressOption } from "./other";
+import { buildBoxplotOption, buildGaugeOption, buildPieOption, buildProgressOption } from "./other";
 import { buildTreemapOption } from "./treemap";
 import { buildMapOption, buildSankeyOption } from "./geo-sankey";
 
@@ -17,7 +17,12 @@ export function isEChartsViz(id: VizId): boolean {
   return !REACT_VIZ.includes(id) && !UNIMPLEMENTED.includes(id);
 }
 
-export function buildEChartsOption(id: VizId, dataset: Dataset, settings: VizSettings): EChartsOption {
+/**
+ * @param size the chart's pixel size. Charts that need to know how much room
+ *   they have use it: the pie for its radii and fonts, the cartesian family to
+ *   decide whether x labels fit horizontally, rotated, or not at all.
+ */
+export function buildEChartsOption(id: VizId, dataset: Dataset, settings: VizSettings, size?: { width: number; height: number }): EChartsOption {
   switch (id) {
     case "bar":
     case "line":
@@ -26,15 +31,13 @@ export function buildEChartsOption(id: VizId, dataset: Dataset, settings: VizSet
     case "row":
     case "scatter":
     case "waterfall":
-      return buildCartesianOption(id, dataset, settings);
+      return buildCartesianOption(id, dataset, settings, size);
     case "pie":
-      return buildPieOption(dataset, settings);
+      return buildPieOption(dataset, settings, size && Math.min(size.width, size.height));
     case "gauge":
       return buildGaugeOption(dataset, settings);
     case "progress":
       return buildProgressOption(dataset, settings);
-    case "funnel":
-      return buildFunnelOption(dataset, settings);
     case "boxplot":
       return buildBoxplotOption(dataset, settings);
     case "sankey":
@@ -75,15 +78,15 @@ export interface Capabilities {
 export function settingsCapabilities(id: VizId): Capabilities {
   const cartesian = ["bar", "line", "area", "combo", "row"].includes(id);
   return {
-    dimension: ["bar", "line", "area", "combo", "row", "pie", "funnel", "waterfall"].includes(id),
+    dimension: ["bar", "line", "area", "combo", "row", "pie", "waterfall"].includes(id),
     metrics: !["object", "sankey", "map"].includes(id),
     multiMetric: ["bar", "line", "area", "combo", "row", "scatter", "boxplot"].includes(id),
     breakout: cartesian,
-    aggregation: [...["bar", "line", "area", "combo", "row", "pie", "funnel", "waterfall"], "pivot"].includes(id),
-    sort: ["bar", "line", "area", "combo", "row", "pie", "funnel"].includes(id),
+    aggregation: [...["bar", "line", "area", "combo", "row", "pie", "waterfall"], "pivot"].includes(id),
+    sort: ["bar", "line", "area", "combo", "row", "pie"].includes(id),
     stacking: ["bar", "area", "row"].includes(id),
     values: cartesian || id === "waterfall",
-    legend: ["bar", "line", "area", "combo", "row", "pie", "funnel"].includes(id),
+    legend: ["bar", "line", "area", "combo", "row", "pie"].includes(id),
     colors: ["bar", "line", "area", "combo", "row", "progress"].includes(id),
     axisTitles: cartesian || id === "waterfall" || id === "scatter",
     goal: ["bar", "line", "area", "combo", "gauge", "progress"].includes(id),

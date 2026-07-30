@@ -48,7 +48,6 @@ import type {
   PiePercent,
   ColorRule,
   ConditionOp,
-  FunnelDisplay,
   QuartileStyle,
   SeparatorStyle,
   SeriesDisplay,
@@ -89,7 +88,6 @@ const TABS: Record<string, string[]> = {
   waterfall: ["Données", "Affichage", "Axes"],
   boxplot: ["Données", "Affichage", "Axes"],
   pie: ["Données", "Affichage"],
-  funnel: ["Données", "Affichage"],
   smartscalar: ["Données", "Affichage"],
   progress: ["Données", "Mise en forme"],
   scalar: ["Mise en forme", "Couleurs"],
@@ -604,14 +602,6 @@ function DonneesTab({ vizId, dataset, settings, onChange, allCols, dimOptions, m
       </Stack>
     );
   }
-  if (vizId === "funnel") {
-    return (
-      <Stack gap="md">
-        <FieldSelect label="Colonne avec les étapes" value={settings.dimension} data={allCols} onPick={(v: string) => v && onChange({ dimension: v })} />
-        <FieldSelect label="Mesure" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-      </Stack>
-    );
-  }
   if (vizId === "smartscalar") {
     const comparisons: ComparisonType[] = settings.comparisons ?? ["previous"];
     const COMP_LABEL: Record<ComparisonType, string> = { previous: "Valeur précédente", first: "Première valeur", average: "Moyenne de la série" };
@@ -804,7 +794,7 @@ function AffichageTab({ vizId, settings, onChange, isCartesian, allCols }: any) 
         />
       )}
 
-      {["bar", "line", "area", "combo", "row", "pie", "funnel"].includes(vizId) && (
+      {["bar", "line", "area", "combo", "row", "pie"].includes(vizId) && (
         <Switch size="sm" checked={settings.showLegend} label="Afficher la légende" onChange={(e) => onChange({ showLegend: e.currentTarget.checked })} />
       )}
 
@@ -845,13 +835,6 @@ function AffichageTab({ vizId, settings, onChange, isCartesian, allCols }: any) 
             comboboxProps={{ withinPortal: true }}
             size="sm"
           />
-        </>
-      )}
-
-      {vizId === "funnel" && (
-        <>
-          <Seg<FunnelDisplay> label="Type d'affichage" value={settings.funnelDisplay} onChange={(v) => onChange({ funnelDisplay: v })} data={[{ label: "Entonnoir", value: "funnel" }, { label: "Barres", value: "bar" }]} />
-          <Switch size="sm" checked={settings.funnelShowPercent} label="Afficher le taux de conversion" onChange={(e) => onChange({ funnelShowPercent: e.currentTarget.checked })} />
         </>
       )}
 

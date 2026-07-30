@@ -8,6 +8,7 @@ import { formatCompact, formatSeriesValue, nf2 } from "../format";
 import type { SeriesOpts } from "../settings";
 import { buildFrame, type Cell, type Frame } from "../frame";
 import { AXIS_LABEL_STYLE, CHART_STYLE, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
+import { measureText } from "./text";
 
 export type CartesianKind = "bar" | "line" | "area" | "combo" | "row" | "scatter" | "waterfall";
 
@@ -59,15 +60,82 @@ function linearFit(xs: number[], ys: (number | null)[]): { slope: number; interc
   return { slope, intercept };
 }
 
-function categoryAxis(categories: Cell[], settings: VizSettings, name?: string) {
+
+// X-axis tick layout, transferred from Metabase's cartesian layout
+// (getAutoAxisEnabledSetting / areHorizontalXAxisTicksOverlapping): rather than
+// letting ECharts silently drop every other label, measure the labels and
+// rotate them — 45°, then 90°, then hide them only when even that cannot fit.
+const AXIS_FONT_SIZE = 12;
+const HORIZONTAL_TICKS_GAP = 6;
+const X_LABEL_ROTATE_45_THRESHOLD_FACTOR = 2.1;
+const X_LABEL_ROTATE_90_THRESHOLD_FACTOR = 1.2;
+const X_LABEL_HEIGHT_RATIO_THRESHOLD = 0.7; // labels may not exceed 70% of the height
+
+export interface ChartSize {
+  width: number;
+  height: number;
+}
+
+interface XTickLayout {
+  show: boolean;
+  rotate: number;
+  /** Height the labels need, so the grid can leave room for them. */
+  height: number;
+}
+
+function xTickLayout(categories: Cell[], size: ChartSize | undefined): XTickLayout {
+  const horizontal: XTickLayout = { show: true, rotate: 0, height: AXIS_FONT_SIZE };
+  if (!size || categories.length === 0) return horizontal;
+
+  const grid = baseGrid();
+  const boundaryWidth = Math.max(size.width - grid.left - grid.right, 1);
+  const dimensionWidth = boundaryWidth / categories.length;
+  const width = (v: Cell) => measureText(String(v ?? ""), AXIS_FONT_SIZE, 400);
+
+  const overlapping = categories.some((c, i) => {
+    if (i === 0) return false;
+    const left = width(categories[i - 1]);
+    const right = width(c);
+    return (
+      left / 2 + right / 2 + HORIZONTAL_TICKS_GAP > dimensionWidth ||
+      right + HORIZONTAL_TICKS_GAP / 2 > dimensionWidth ||
+      left + HORIZONTAL_TICKS_GAP / 2 > dimensionWidth
+    );
+  });
+  if (!overlapping) return horizontal;
+
+  const maxWidth = Math.max(...categories.map(width));
+  const hidden: XTickLayout = { show: false, rotate: 0, height: 0 };
+
+  if (dimensionWidth >= AXIS_FONT_SIZE * X_LABEL_ROTATE_45_THRESHOLD_FACTOR) {
+    const height = maxWidth / Math.SQRT2;
+    return height / size.height < X_LABEL_HEIGHT_RATIO_THRESHOLD ? { show: true, rotate: 45, height } : hidden;
+  }
+  if (dimensionWidth >= AXIS_FONT_SIZE * X_LABEL_ROTATE_90_THRESHOLD_FACTOR) {
+    return maxWidth / size.height < X_LABEL_HEIGHT_RATIO_THRESHOLD ? { show: true, rotate: 90, height: maxWidth } : hidden;
+  }
+  return hidden;
+}
+
+function categoryAxis(categories: Cell[], settings: VizSettings, name?: string, size?: ChartSize) {
+  const ticks = xTickLayout(categories, size);
   return {
     type: "category" as const,
     name: settings.xShowTitle ? settings.xAxisTitle ?? name : undefined,
     data: categories as (string | number)[],
-    nameGap: CHART_STYLE.axisNameMargin + 22,
+    nameGap: CHART_STYLE.axisNameMargin + 10 + ticks.height,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL_STYLE, show: settings.xAxisEnabled, margin: CHART_STYLE.axisTicksMarginX },
+    axisLabel: {
+      ...AXIS_LABEL_STYLE,
+      show: settings.xAxisEnabled && ticks.show,
+      margin: CHART_STYLE.axisTicksMarginX,
+      rotate: ticks.rotate,
+      // Consider every category, then drop only those that truly collide —
+      // ECharts' default silently keeps one label out of two.
+      interval: () => true,
+      hideOverlap: true,
+    },
     axisTick: { show: false, alignWithLabel: true },
     axisLine: { lineStyle: { color: MB_COLORS.borderStrong } },
   };
@@ -163,13 +231,13 @@ function goalMarkLine(settings: VizSettings) {
   };
 }
 
-export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, settings: VizSettings): EChartsOption {
+export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, settings: VizSettings, size?: ChartSize): EChartsOption {
   if (kind === "scatter") return buildScatter(dataset, settings);
 
   const frame = buildFrame(dataset, settings);
 
   if (kind === "row") return buildRow(frame, settings);
-  if (kind === "waterfall") return buildWaterfall(frame, settings);
+  if (kind === "waterfall") return buildWaterfall(frame, settings, size);
 
   const isArea = kind === "area";
   const isLine = kind === "line" || isArea;
@@ -295,10 +363,15 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
     : undefined;
 
   return {
-    grid: { ...baseGrid(), top: frame.series.length >= 2 && settings.showLegend ? 36 : 24 },
+    grid: {
+      ...baseGrid(),
+      top: frame.series.length >= 2 && settings.showLegend ? 36 : 24,
+      // Rotated x labels need room, or they are clipped by the canvas.
+      bottom: baseGrid().bottom + (isDate ? 0 : Math.max(0, xTickLayout(frame.categories, size).height - AXIS_FONT_SIZE)),
+    },
     tooltip: tooltipCfg(tipExtra),
     legend: legendCfg(frame, settings),
-    xAxis: isDate ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name) : categoryAxis(frame.categories, settings, frame.dimension.display_name),
+    xAxis: isDate ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name) : categoryAxis(frame.categories, settings, frame.dimension.display_name, size),
     yAxis,
     series,
     textStyle: { fontFamily: FONT_FAMILY },
@@ -382,7 +455,7 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
   };
 }
 
-function buildWaterfall(frame: Frame, settings: VizSettings): EChartsOption {
+function buildWaterfall(frame: Frame, settings: VizSettings, size?: ChartSize): EChartsOption {
   const values = frame.series[0]?.values.map((v) => Number(v) || 0) ?? [];
 
   const bases: number[] = [];
@@ -420,7 +493,7 @@ function buildWaterfall(frame: Frame, settings: VizSettings): EChartsOption {
   return {
     grid: baseGrid(),
     tooltip: tooltipCfg(),
-    xAxis: categoryAxis(categories, settings, frame.dimension.display_name),
+    xAxis: categoryAxis(categories, settings, frame.dimension.display_name, size),
     yAxis: valueAxis(settings),
     series,
     textStyle: { fontFamily: FONT_FAMILY },

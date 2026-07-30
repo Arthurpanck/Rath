@@ -17,7 +17,6 @@ export type VizId =
   | "boxplot"
   | "pie"
   | "map"
-  | "funnel"
   | "object"
   | "pivot"
   | "treemap"
@@ -54,7 +53,6 @@ export const VISUALIZATIONS: VizDef[] = [
   { id: "boxplot", name: "Boîte à moustaches", icon: "boxplot", implemented: true, isSensible: (d) => getMetrics(d).length >= 1 },
   { id: "pie", name: "Camembert", icon: "pie", implemented: true, isSensible: (d) => hasDimAndMetric(d) && d.rows.length <= 20 },
   { id: "map", name: "Carte", icon: "pinmap", implemented: true, isSensible: (d) => hasGeoColumn(d.cols) && getMetrics(d).length >= 1 },
-  { id: "funnel", name: "Entonnoir", icon: "funnel", implemented: true, isSensible: (d) => hasDimAndMetric(d) && getMetrics(d).length === 1 },
   { id: "object", name: "Visualisation détaillée", icon: "document", implemented: true, isSensible: (d) => d.rows.length === 1 },
   { id: "pivot", name: "Tableau croisé dynamique", icon: "pivot_table", implemented: true, isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1 },
   { id: "treemap", name: "Treemap", icon: "treemap", implemented: true, isSensible: (d) => getDimensions(d).length >= 1 && getMetrics(d).length >= 1 },
@@ -80,7 +78,6 @@ const DEFAULT_VIZ_ORDER: VizId[] = [
   "smartscalar",
   "gauge",
   "progress",
-  "funnel",
   "object",
   "map",
   "scatter",

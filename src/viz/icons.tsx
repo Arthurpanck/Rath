@@ -99,10 +99,6 @@ const ICONS: Record<string, ReactNode> = {
   progress: (
     <svg {...S}><rect x="2.5" y="8" width="15" height="4" rx="2" {...stroke} /><rect x="2.5" y="8" width="9" height="4" rx="2" {...fill} /></svg>
   ),
-  // Funnel
-  funnel: (
-    <svg {...S}><path d="M2.5 4.5H17.5L11.5 11V16L8.5 14.5V11z" {...stroke} /></svg>
-  ),
   // Waterfall
   waterfall: (
     <svg {...S}><rect x="2.5" y="4" width="2.6" height="4" rx="0.4" {...fill} /><rect x="6.2" y="8" width="2.6" height="4" rx="0.4" {...fill} /><rect x="9.9" y="6" width="2.6" height="4" rx="0.4" {...fill} /><rect x="13.6" y="10" width="2.6" height="4" rx="0.4" {...fill} /></svg>

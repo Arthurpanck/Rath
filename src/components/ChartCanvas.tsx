@@ -8,6 +8,9 @@ import { buildEChartsOption, isEChartsViz } from "../viz/options";
 import { ensureRegion } from "../viz/options/geo-sankey";
 import { applyTreemapLabels, drillTreemapOption } from "../viz/options/treemap";
 import { MB_COLORS } from "../viz/options/constants";
+
+// Charts whose option depends on the container size and must be rebuilt on resize.
+const CARTESIAN_VIZ = ["bar", "line", "area", "combo", "row", "scatter", "waterfall", "boxplot"];
 import { ScalarView, TrendView } from "./ScalarViews";
 import { DataTable } from "./DataTable";
 import { PivotTableView } from "./PivotTableView";
@@ -33,7 +36,12 @@ function EChart({
     const chart = echarts.init(ref.current, undefined, { renderer: "canvas" });
     chartRef.current = chart;
     onChartReady?.(chart);
-    const ro = new ResizeObserver(() => chart.resize());
+    const ro = new ResizeObserver(() => {
+      chart.resize();
+      // The pie derives its radii and fonts from the container, so a resize has
+      // to rebuild the option, not just re-layout it.
+      rebuildRef.current?.();
+    });
     ro.observe(ref.current);
     return () => {
       ro.disconnect();
@@ -53,6 +61,7 @@ function EChart({
   // The treemap is laid out first and labelled second: once ECharts has placed
   // the tiles we measure them and decide, per tile, how much of the label fits.
   const optionRef = useRef<any>(null);
+  const rebuildRef = useRef<(() => void) | null>(null);
   const labelSigRef = useRef<string | null>(null);
   const [drilledGroup, setDrilledGroup] = useState<string | null>(null);
 
@@ -60,11 +69,21 @@ function EChart({
     const chart = chartRef.current;
     if (!chart) return;
     chart.clear();
-    const option = buildEChartsOption(vizId, dataset, settings);
+    const option = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
     optionRef.current = option;
     labelSigRef.current = null;
     setDrilledGroup(null);
     chart.setOption(option, true);
+
+    rebuildRef.current =
+      vizId === "pie" || CARTESIAN_VIZ.includes(vizId)
+        ? () => {
+            const next = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
+            optionRef.current = next;
+            chart.setOption(next, true);
+          }
+        : null;
+
     if (vizId !== "treemap") return;
 
     const relabel = () => {
@@ -94,7 +113,7 @@ function EChart({
   const resetDrill = () => {
     const chart = chartRef.current;
     if (!chart) return;
-    const option = buildEChartsOption(vizId, dataset, settings);
+    const option = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
     optionRef.current = option;
     labelSigRef.current = null;
     setDrilledGroup(null);

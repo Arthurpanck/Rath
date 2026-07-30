@@ -12,6 +12,7 @@ import type { VizSettings } from "../settings";
 import { findColumn, resolveShape } from "../settings";
 import { formatNumber } from "../format";
 import { FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
+import { measureText, truncateToWidth } from "./text";
 
 // --- style.ts -------------------------------------------------------------
 const GROUP_HEADER = { fontWeight: 700, fontSize: 12, height: 32, paddingX: 12, percentFontWeight: 400, valuePercentGap: 8 };
@@ -104,31 +105,6 @@ function textColorFor(hex: string): string {
 
 // ECharts' rich-text template treats {, } and | as syntax.
 const sanitizeRich = (text: string) => text.replace(/[{}|]/g, "");
-
-// --------------------------------------------------------- measurement ----
-
-let measureCtx: CanvasRenderingContext2D | null = null;
-function measureText(text: string, size: number, weight: number): number {
-  if (typeof document === "undefined") return text.length * size * 0.6;
-  if (!measureCtx) measureCtx = document.createElement("canvas").getContext("2d");
-  if (!measureCtx) return text.length * size * 0.6;
-  measureCtx.font = `${weight} ${size}px ${FONT_FAMILY}`;
-  return measureCtx.measureText(text).width;
-}
-
-/** Shorten to fit a pixel width, as ECharts' own truncation is unreliable. */
-function truncateToWidth(text: string, width: number, size: number, weight: number): string {
-  if (width <= 0) return "";
-  if (measureText(text, size, weight) <= width) return text;
-  let lo = 0;
-  let hi = text.length;
-  while (lo < hi) {
-    const mid = Math.ceil((lo + hi) / 2);
-    if (measureText(`${text.slice(0, mid)}…`, size, weight) <= width) lo = mid;
-    else hi = mid - 1;
-  }
-  return lo > 0 ? `${text.slice(0, lo)}…` : "";
-}
 
 /** One node as the chart actually laid it out. */
 interface LayoutNode {
