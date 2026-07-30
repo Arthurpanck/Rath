@@ -90,7 +90,7 @@ export function FilterButton({
   const dateInput = kind === "date" && arity === 2;
 
   return (
-    <Group gap={6}>
+    <Group gap={6} wrap="nowrap">
       <Popover opened={open} onChange={(o) => { setOpen(o); if (!o) reset(); }} position="bottom-end" shadow="lg" width={330} withinPortal>
         <Popover.Target>
           <Button
@@ -201,8 +201,15 @@ export function FilterButton({
       </Popover>
 
       {filters.map((f, i) => (
-        <Group key={i} gap={4} style={{ background: "var(--mantine-color-filter-0)", borderRadius: 999, padding: "2px 4px 2px 10px" }}>
-          <Text fz="xs" fw={600} style={{ color: "var(--mantine-color-filter-7)" }}>{describeFilter(dataset, f)}</Text>
+        <Group key={i} gap={4} wrap="nowrap" style={{ background: "var(--mantine-color-filter-0)", borderRadius: 999, padding: "2px 4px 2px 10px", maxWidth: 220 }}>
+          <Text
+            fz="xs"
+            fw={600}
+            title={describeFilter(dataset, f)}
+            style={{ color: "var(--mantine-color-filter-7)", whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+          >
+            {describeFilter(dataset, f)}
+          </Text>
           <ActionIcon size="xs" variant="subtle" color="filter" aria-label="Retirer le filtre" onClick={() => onChange(filters.filter((_, j) => j !== i))}>
             <svg width="11" height="11" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" /></svg>
           </ActionIcon>

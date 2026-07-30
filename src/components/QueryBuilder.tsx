@@ -85,15 +85,24 @@ export function QueryBuilder({
       {/* Top bar */}
       <Group
         justify="space-between"
+        wrap="nowrap"
         style={{ padding: "10px 16px", borderBottom: `1px solid ${MB_COLORS.border}`, height: 52, flexShrink: 0 }}
       >
-        <Group gap="sm">
-          <Text fw={700} style={{ color: MB_COLORS.textPrimary, fontSize: 16 }}>{datasetName}</Text>
-          <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>
+        {/* The title shrinks and ellipsises so a long file name never pushes
+            the actions onto a second row. */}
+        <Group gap="sm" wrap="nowrap" style={{ flex: 1, minWidth: 0 }}>
+          <Text
+            fw={700}
+            title={datasetName}
+            style={{ color: MB_COLORS.textPrimary, fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
+          >
+            {datasetName}
+          </Text>
+          <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>
             {dataset.cols.length} colonnes · {dataset.rows.length} lignes
           </Text>
         </Group>
-        <Group gap="xs">
+        <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
           <FilterButton dataset={rawDataset} filters={filters} onChange={setFilters} />
           <SummarizeButton active={summarizeOpen || summarize.aggregations.length > 0} onClick={() => setSummarizeOpen((o) => !o)} />
           <button
