@@ -3,7 +3,8 @@ import type { Dataset } from "../../data/types";
 import type { VizId } from "../registry";
 import type { VizSettings } from "../settings";
 import { buildCartesianOption } from "./cartesian";
-import { buildBoxplotOption, buildFunnelOption, buildGaugeOption, buildPieOption, buildProgressOption, buildTreemapOption } from "./other";
+import { buildBoxplotOption, buildFunnelOption, buildGaugeOption, buildPieOption, buildProgressOption } from "./other";
+import { buildTreemapOption } from "./treemap";
 import { buildMapOption, buildSankeyOption } from "./geo-sankey";
 
 // Vizs rendered as React components (not ECharts).

@@ -6,6 +6,7 @@ import type { VizSettings } from "../viz/settings";
 import { resolveShape } from "../viz/settings";
 import { buildEChartsOption, isEChartsViz } from "../viz/options";
 import { ensureRegion } from "../viz/options/geo-sankey";
+import { applyTreemapLabels, drillTreemapOption } from "../viz/options/treemap";
 import { MB_COLORS } from "../viz/options/constants";
 import { ScalarView, TrendView } from "./ScalarViews";
 import { DataTable } from "./DataTable";
@@ -49,14 +50,89 @@ function EChart({
     if (vizId === "map") ensureRegion(settings.mapRegion, () => setGeoTick((t) => t + 1));
   }, [vizId, settings.mapRegion]);
 
+  // The treemap is laid out first and labelled second: once ECharts has placed
+  // the tiles we measure them and decide, per tile, how much of the label fits.
+  const optionRef = useRef<any>(null);
+  const labelSigRef = useRef<string | null>(null);
+  const [drilledGroup, setDrilledGroup] = useState<string | null>(null);
+
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
     chart.clear();
-    chart.setOption(buildEChartsOption(vizId, dataset, settings), true);
+    const option = buildEChartsOption(vizId, dataset, settings);
+    optionRef.current = option;
+    labelSigRef.current = null;
+    setDrilledGroup(null);
+    chart.setOption(option, true);
+    if (vizId !== "treemap") return;
+
+    const relabel = () => {
+      const sig = applyTreemapLabels(chart, optionRef.current);
+      if (sig == null || sig === labelSigRef.current) return;
+      labelSigRef.current = sig;
+      chart.setOption(optionRef.current);
+    };
+    const onClick = (params: any) => {
+      const node = params?.data;
+      if (!node?.children || !node.id) return;
+      const drilled = drillTreemapOption(option, node.id);
+      if (!drilled) return;
+      optionRef.current = drilled;
+      labelSigRef.current = null;
+      setDrilledGroup(node.name ?? null);
+      chart.setOption(drilled, true);
+    };
+    chart.on("finished", relabel);
+    chart.on("click", onClick);
+    return () => {
+      chart.off("finished", relabel);
+      chart.off("click", onClick);
+    };
   }, [vizId, dataset, settings, geoTick]);
 
-  return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
+  const resetDrill = () => {
+    const chart = chartRef.current;
+    if (!chart) return;
+    const option = buildEChartsOption(vizId, dataset, settings);
+    optionRef.current = option;
+    labelSigRef.current = null;
+    setDrilledGroup(null);
+    chart.setOption(option, true);
+  };
+
+  return (
+    <div style={{ width: "100%", height: "100%", position: "relative" }}>
+      <div ref={ref} style={{ width: "100%", height: "100%" }} />
+      {drilledGroup && (
+        <button
+          onClick={resetDrill}
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            border: "none",
+            background: "transparent",
+            cursor: "pointer",
+            fontSize: 13,
+            fontWeight: 700,
+            color: MB_COLORS.brand,
+            padding: 0,
+            zIndex: 2,
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+            <path d="M12 4L6 10l6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+          </svg>
+          Tout
+          <span style={{ color: MB_COLORS.textTertiary, fontWeight: 400 }}>/ {drilledGroup}</span>
+        </button>
+      )}
+    </div>
+  );
 }
 
 export function ChartCanvas({
