@@ -90,21 +90,26 @@ function timeAxis(timestamps: number[], settings: VizSettings, name?: string) {
 function tooltipCfg(extra?: { names: string[]; rows: string[][] }): EChartsOption["tooltip"] {
   return {
     trigger: "axis",
-    // "Colonnes d'infobulle supplémentaires": appended under the series lines.
-    formatter: extra
-      ? (params: any) => {
-          const list = Array.isArray(params) ? params : [params];
-          const idx = list[0]?.dataIndex ?? 0;
-          const head = `<div style="font-weight:700;margin-bottom:4px">${list[0]?.axisValueLabel ?? ""}</div>`;
-          const series = list
-            .map((p: any) => `<div>${p.marker} ${p.seriesName}: <b>${nf(Array.isArray(p.value) ? Number(p.value[1]) : Number(p.value))}</b></div>`)
-            .join("");
-          const rows = extra.names
-            .map((n, i) => `<div style="color:#949AAB">${n}: ${extra.rows[idx]?.[i] ?? ""}</div>`)
-            .join("");
-          return head + series + (rows ? `<div style="margin-top:4px;border-top:1px solid #EEECEC;padding-top:4px">${rows}</div>` : "");
-        }
-      : undefined,
+    // Always format values (ECharts' default prints raw floats like 75.1999999),
+    // and append the "Colonnes d'infobulle supplémentaires" underneath.
+    formatter: (params: any) => {
+      const list = Array.isArray(params) ? params : [params];
+      const idx = list[0]?.dataIndex ?? 0;
+      const head = `<div style="font-weight:700;margin-bottom:4px">${list[0]?.axisValueLabel ?? ""}</div>`;
+      const series = list
+        .filter((p: any) => p.seriesName !== "Total")
+        .map(
+          (p: any) =>
+            `<div style="display:flex;gap:12px;justify-content:space-between">${p.marker} ${p.seriesName}<b>${nf(
+              Array.isArray(p.value) ? Number(p.value[1]) : Number(p.value),
+            )}</b></div>`,
+        )
+        .join("");
+      const rows = extra
+        ? extra.names.map((n, i) => `<div style="color:#949AAB">${n}: ${extra.rows[idx]?.[i] ?? ""}</div>`).join("")
+        : "";
+      return head + series + (rows ? `<div style="margin-top:4px;border-top:1px solid #EEECEC;padding-top:4px">${rows}</div>` : "");
+    },
     axisPointer: { type: "line", lineStyle: { color: MB_COLORS.border, width: 1 } },
     backgroundColor: MB_COLORS.white,
     borderColor: MB_COLORS.border,
@@ -211,10 +216,12 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       step: o.lineShape === "stepped" ? ("end" as const) : undefined,
       lineStyle: asLine ? { width: LINE_WIDTH[o.lineSize ?? "M"] ?? 2, color, type: o.lineDash ?? "solid" } : undefined,
       areaStyle: asArea ? { color, opacity: areaOpacity } : undefined,
+      // Highlight the hovered mark without washing out its neighbours.
       emphasis: {
-        focus: "series" as const,
-        itemStyle: asLine ? undefined : { shadowBlur: 8, shadowColor: "rgba(0,0,0,0.18)", shadowOffsetY: 1 },
+        focus: "none" as const,
+        itemStyle: asLine ? undefined : { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)", shadowOffsetY: 1 },
       },
+      blur: { itemStyle: { opacity: 0.9 } },
       // Stacked segments label inside; otherwise above the mark.
       label: dataLabel(settings, normalized, stacked ? "inside" : "top", o),
       markLine: i === 0 ? goalMarkLine(settings) : undefined,
@@ -310,7 +317,8 @@ function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
       stack: stacked ? "stack" : undefined,
       itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
       barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
-      emphasis: { focus: "series" as const, itemStyle: { shadowBlur: 8, shadowColor: "rgba(0,0,0,0.18)" } },
+      emphasis: { focus: "none" as const, itemStyle: { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)" } },
+      blur: { itemStyle: { opacity: 0.9 } },
       label: dataLabel(settings, false, stacked ? "inside" : "right", o),
     } as SeriesOption;
   });
@@ -357,7 +365,7 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
         symbolSize: bubble ? ((val: number[]) => sizeFor(val[2])) : 10,
         data: data as (number | null)[][],
         itemStyle: { color: colorFor(settings, xMetric?.name ?? "x", 0), opacity: CHART_STYLE.opacity.scatter },
-        emphasis: { focus: "series" as const, itemStyle: { opacity: 1, borderColor: "#fff", borderWidth: 1.5 } },
+        emphasis: { focus: "none" as const, itemStyle: { opacity: 1, borderColor: "#fff", borderWidth: 1.5 } },
         label: settings.scatterShowLabels && names.length
           ? {
               show: true,

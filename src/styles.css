@@ -35,7 +35,26 @@ body {
   border: none !important;
 }
 
-/* Hover feedback in the filter/summarize field lists. */
+/* Hover feedback in the field lists: purple for Filtrer, green for Résumer,
+   so it is obvious which step you are editing. */
 .mb-row:hover {
   background: #f4fafe;
+}
+.mb-row-purple:hover {
+  background: var(--mantine-color-filter-0);
+}
+.mb-row-purple:hover * {
+  color: var(--mantine-color-filter-7) !important;
+}
+.mb-row-green:hover {
+  background: var(--mantine-color-summarize-0);
+}
+.mb-row-green:hover * {
+  color: var(--mantine-color-summarize-8) !important;
+}
+
+/* Slightly tighter dropdown items, closer to Metabase's density. */
+.mantine-Menu-item {
+  padding: 7px 10px;
+  font-size: 13px;
 }

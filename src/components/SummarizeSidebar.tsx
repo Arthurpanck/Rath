@@ -36,10 +36,10 @@ function TypeGlyph({ col, active }: { col: Column; active?: boolean }) {
 function PickRow({ label, onClick, active, col }: { label: string; onClick: () => void; active?: boolean; col?: Column }) {
   return (
     <UnstyledButton
-      className={active ? undefined : "mb-row"}
+      className={active ? undefined : "mb-row-green"}
       onClick={onClick}
       style={{
-        padding: "8px 10px",
+        padding: "7px 10px",
         borderRadius: 6,
         display: "flex",
         alignItems: "center",
@@ -153,11 +153,28 @@ export function SummarizeSidebar({
         <Stack gap="sm" p="md">
           <Text fw={700} fz="sm" style={{ color: MB_COLORS.textPrimary }}>Résumer par</Text>
 
+          {summarize.aggregations.length === 0 ? (
+            <Popover opened={addOpen} onChange={setAddOpen} position="bottom-start" shadow="lg" withinPortal>
+              <Popover.Target>
+                <UnstyledButton
+                  onClick={() => setAddOpen((o) => !o)}
+                  className="mb-row-green"
+                  style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, background: MB_COLORS.bgLight, border: `1px solid ${MB_COLORS.border}` }}
+                >
+                  <Text fz="lg" fw={700} style={{ color: "var(--mantine-color-summarize-6)", lineHeight: 1 }}>+</Text>
+                  <Text fz="sm" fw={700} style={{ color: "var(--mantine-color-summarize-6)" }}>Ajouter une fonction ou une métrique</Text>
+                </UnstyledButton>
+              </Popover.Target>
+              <Popover.Dropdown p={0}>
+                <AggPicker dataset={dataset} onPick={addAgg} onClose={() => setAddOpen(false)} />
+              </Popover.Dropdown>
+            </Popover>
+          ) : (
           <Group gap={6} wrap="wrap">
             {summarize.aggregations.map((a, i) => (
               <Popover key={i} opened={editing === i} onChange={(o) => setEditing(o ? i : null)} position="bottom-start" shadow="lg" withinPortal>
                 <Popover.Target>
-                  <Group gap={2} wrap="nowrap" style={{ background: "var(--mantine-color-summarize-6)", borderRadius: 6, padding: "4px 4px 4px 10px" }}>
+                  <Group gap={2} wrap="nowrap" style={{ background: "var(--mantine-color-summarize-6)", borderRadius: 6, padding: "3px 4px 3px 12px" }}>
                     <UnstyledButton onClick={() => setEditing(i)}>
                       <Text fz="sm" fw={700} style={{ color: "#fff" }}>{describeAggregation(dataset, a)}</Text>
                     </UnstyledButton>
@@ -174,7 +191,7 @@ export function SummarizeSidebar({
 
             <Popover opened={addOpen} onChange={setAddOpen} position="bottom-start" shadow="lg" withinPortal>
               <Popover.Target>
-                <ActionIcon variant="default" size="md" aria-label="Ajouter une agrégation" onClick={() => setAddOpen((o) => !o)}>
+                <ActionIcon variant="default" size="md" radius="sm" aria-label="Ajouter une agrégation" onClick={() => setAddOpen((o) => !o)}>
                   <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke={MB_COLORS.textSecondary} strokeWidth="1.8" strokeLinecap="round" /></svg>
                 </ActionIcon>
               </Popover.Target>
@@ -183,7 +200,11 @@ export function SummarizeSidebar({
               </Popover.Dropdown>
             </Popover>
           </Group>
+          )}
 
+          {/* "Regrouper par" only appears once something is being summarised. */}
+          {summarize.aggregations.length > 0 && (
+          <>
           <Divider my="xs" />
 
           <Text fw={700} fz="sm" style={{ color: MB_COLORS.textPrimary }}>Regrouper par</Text>
@@ -195,9 +216,9 @@ export function SummarizeSidebar({
               return (
                 <UnstyledButton
                   key={c.name}
-                  className={active ? undefined : "mb-row"}
+                  className={active ? undefined : "mb-row-green"}
                   onClick={() => toggleBreakout(c.name)}
-                  style={{ padding: "8px 10px", borderRadius: 6, background: active ? "var(--mantine-color-summarize-6)" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
+                  style={{ padding: "7px 10px", borderRadius: 6, background: active ? "var(--mantine-color-summarize-6)" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
                 >
                   <TypeGlyph col={c} active={active} />
                   <Text fz="sm" fw={active ? 700 : 400} style={{ flex: 1, color: active ? "#fff" : MB_COLORS.textPrimary }}>
@@ -212,6 +233,8 @@ export function SummarizeSidebar({
               );
             })}
           </Stack>
+          </>
+          )}
         </Stack>
       </ScrollArea>
 

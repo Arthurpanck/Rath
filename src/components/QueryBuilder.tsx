@@ -6,7 +6,7 @@ import type { VizId } from "../viz/registry";
 import { VIZ_BY_ID } from "../viz/registry";
 import { defaultDisplay, maybeResetDisplay } from "../viz/auto-display";
 import type { VizSettings } from "../viz/settings";
-import { defaultSettings } from "../viz/settings";
+import { settingsForQuery } from "../viz/settings";
 import { exportPng } from "../data/export";
 import type { Filter, Summarize } from "../data/query";
 import { applyQuery } from "../data/query";
@@ -43,7 +43,7 @@ export function QueryBuilder({
   // visualization picker collapsed; you open it via the "Visualisation" button.
   const [sidebar, setSidebar] = useState<SidebarMode>("closed");
   const [mode, setMode] = useState<"table" | "chart">("table");
-  const [settings, setSettings] = useState<VizSettings>(() => defaultSettings(dataset));
+  const [settings, setSettings] = useState<VizSettings>(() => settingsForQuery(dataset, null));
   const chartRef = useRef<echarts.ECharts | null>(null);
 
   const handleExport = (_kind: ExportKind) => {
@@ -60,7 +60,7 @@ export function QueryBuilder({
 
   // After every query change, re-pick the display the way Metabase does.
   useEffect(() => {
-    setSettings(defaultSettings(dataset));
+    setSettings(settingsForQuery(dataset, summarize.aggregations.length ? summarize : null));
     setSelected((current) => {
       const next = maybeResetDisplay({ current, dataset, summarize, locked: displayLocked });
       if (!next.locked && displayLocked) setDisplayLocked(false);

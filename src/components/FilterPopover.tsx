@@ -121,7 +121,7 @@ export function FilterButton({
               </Box>
               <Stack gap={0} style={{ maxHeight: 340, overflowY: "auto", padding: 4 }}>
                 {visibleCols.map((c) => (
-                  <UnstyledButton key={c.name} className="mb-row" onClick={() => pickField(c.name)} style={{ padding: "8px 10px", borderRadius: 6, display: "flex", alignItems: "center", gap: 8 }}>
+                  <UnstyledButton key={c.name} className="mb-row-purple" onClick={() => pickField(c.name)} style={{ padding: "7px 10px", borderRadius: 6, display: "flex", alignItems: "center", gap: 8 }}>
                     <TypeIcon col={c} />
                     <Text fz="sm" style={{ color: MB_COLORS.textPrimary }}>{c.display_name}</Text>
                   </UnstyledButton>

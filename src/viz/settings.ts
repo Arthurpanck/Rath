@@ -263,6 +263,41 @@ export function defaultSettings(dataset: Dataset): VizSettings {
   };
 }
 
+/**
+ * Settings for a freshly-run query: point the chart at exactly what the user
+ * just summarised — breakouts become the dimension, aggregations the series —
+ * so an auto-picked chart never shows an unrelated column.
+ */
+export function settingsForQuery(
+  dataset: Dataset,
+  query: { aggregations: { fn: string; column?: string }[]; breakouts: string[] } | null,
+): VizSettings {
+  const base = defaultSettings(dataset);
+  if (!query || query.aggregations.length === 0) return base;
+
+  // applySummarize lays the dataset out as [ ...breakouts, ...aggregations ].
+  const breakoutCols = dataset.cols.slice(0, query.breakouts.length);
+  const aggCols = dataset.cols.slice(query.breakouts.length);
+  if (aggCols.length === 0) return base;
+
+  const dimension = breakoutCols[0];
+  const metrics = aggCols.map((c) => c.name);
+  return {
+    ...base,
+    dimension: dimension?.name ?? base.dimension,
+    metrics,
+    // Single-value vizs read these explicitly.
+    scalarField: aggCols[0].name,
+    // Map / sankey / pivot field pickers follow the same query shape.
+    locationField: breakoutCols[0]?.name ?? base.locationField,
+    rowField: breakoutCols[0]?.name ?? base.rowField,
+    colField: breakoutCols[1]?.name ?? base.colField,
+    sourceField: breakoutCols[0]?.name ?? base.sourceField,
+    targetField: breakoutCols[1]?.name ?? base.targetField,
+    breakout: breakoutCols[1]?.name,
+  };
+}
+
 export function findColumn(dataset: Dataset, name?: string): Column | undefined {
   return dataset.cols.find((c) => c.name === name);
 }

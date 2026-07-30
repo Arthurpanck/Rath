@@ -28,6 +28,11 @@ export function DataTable({ dataset, detail = false, settings }: { dataset: Data
     );
   }
 
+  // Rendering every row of a big CSV freezes the page; Metabase paginates, we cap.
+  const MAX_ROWS = 2000;
+  const rowsShown = dataset.rows.slice(0, MAX_ROWS);
+  const truncated = dataset.rows.length > MAX_ROWS;
+
   const headerCell = {
     background: MB_COLORS.tableHeaderBg,
     color: MB_COLORS.tableHeaderText,
@@ -53,7 +58,7 @@ export function DataTable({ dataset, detail = false, settings }: { dataset: Data
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {dataset.rows.map((row, i) => {
+          {rowsShown.map((row, i) => {
             // "Couleurs conditionnelles": a rule can tint one cell or the row.
             const rules = settings?.colorRules ?? [];
             const rowRule = rules.find((r) => {
@@ -104,6 +109,11 @@ export function DataTable({ dataset, detail = false, settings }: { dataset: Data
           })}
         </Table.Tbody>
       </Table>
+      {truncated && (
+        <div style={{ padding: "10px 16px", color: MB_COLORS.textTertiary, fontSize: 12 }}>
+          Affichage des {MAX_ROWS.toLocaleString("fr-FR")} premières lignes sur {dataset.rows.length.toLocaleString("fr-FR")}.
+        </div>
+      )}
     </div>
   );
 }
