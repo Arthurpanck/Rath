@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActionIcon,
   Anchor,
@@ -185,7 +185,7 @@ export function SettingsPanel({
   const isCartesian = CARTESIAN.includes(vizId);
 
   return (
-    <Box style={{ width: 320, borderRight: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.white, display: "flex", flexDirection: "column", height: "100%" }}>
+    <Box style={{ width: 400, borderRight: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.white, display: "flex", flexDirection: "column", height: "100%" }}>
       <Group gap="xs" style={{ padding: "12px 16px", borderBottom: `1px solid ${MB_COLORS.border}` }}>
         <UnstyledButton onClick={onBack} aria-label="Retour" style={{ color: MB_COLORS.textSecondary, display: "inline-flex" }}>
           <svg width="18" height="18" viewBox="0 0 20 20" fill="none"><path d="M12 4L6 10l6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
@@ -203,7 +203,7 @@ export function SettingsPanel({
         <ScrollArea style={{ height: "calc(100vh - 190px)" }}>
           <Box style={{ padding: 16 }}>
             {tab === "Données" && (
-              <DonneesTab vizId={vizId} settings={settings} onChange={onChange} allCols={allCols} dimOptions={dimOptions} metricOptions={metricOptions} activeMetrics={activeMetrics} />
+              <DonneesTab vizId={vizId} dataset={dataset} settings={settings} onChange={onChange} allCols={allCols} dimOptions={dimOptions} metricOptions={metricOptions} activeMetrics={activeMetrics} />
             )}
             {tab === "Affichage" && <AffichageTab vizId={vizId} settings={settings} onChange={onChange} isCartesian={isCartesian} allCols={allCols} />}
             {tab === "Axes" && <AxesTab settings={settings} onChange={onChange} />}
@@ -464,7 +464,128 @@ function SeriesPopover({
 
 // ================================================================ Données ====
 
-function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOptions, activeMetrics }: any) {
+/**
+ * The values of the treemap's "Grouping" column, in size order: one row per
+ * value with its colour, a "…" for renaming and a "×" to drop it from the
+ * chart — the sub-dimensions Metabase lists under the Grouping select.
+ */
+function TreemapGroupList({
+  dataset,
+  settings,
+  onChange,
+}: {
+  dataset: Dataset;
+  settings: VizSettings;
+  onChange: (p: Partial<VizSettings>) => void;
+}) {
+  const values = useMemo(() => {
+    const col = dataset.cols.find((c) => c.name === settings.dimension);
+    if (!col) return [] as string[];
+    const metric = dataset.cols.find((c) => c.name === settings.metrics?.[0]);
+    const totals = new Map<string, number>();
+    for (const r of dataset.rows) {
+      const key = String(r[col.index] ?? "");
+      totals.set(key, (totals.get(key) ?? 0) + (metric ? Number(r[metric.index]) || 0 : 1));
+    }
+    // Long-tail columns would fill the panel with hundreds of rows.
+    return [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([name]) => name);
+  }, [dataset, settings.dimension, settings.metrics]);
+
+  const hidden: string[] = settings.hiddenValues ?? [];
+  const shown = values.filter((v) => !hidden.includes(v));
+  const restorable = values.filter((v) => hidden.includes(v));
+  if (values.length === 0) return null;
+
+  return (
+    <Stack gap={6} pl="md">
+      {shown.map((value) => (
+        <TreemapGroupRow
+          key={value}
+          value={value}
+          // Indexed over every value, so removing one does not recolour the rest.
+          color={settings.colors[value] ?? seriesColor(values.indexOf(value))}
+          name={settings.series[value]?.name}
+          settings={settings}
+          onChange={onChange}
+          onRemove={() => onChange({ hiddenValues: [...hidden, value] })}
+        />
+      ))}
+      {restorable.length > 0 && (
+        <Menu shadow="md" width={240} position="bottom-start" withinPortal>
+          <Menu.Target>
+            <Anchor component="button" type="button" fz="sm" fw={700} style={{ color: MB_COLORS.brand, alignSelf: "flex-start" }}>
+              Ajouter une valeur
+            </Anchor>
+          </Menu.Target>
+          <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
+            {restorable.map((v) => (
+              <Menu.Item key={v} onClick={() => onChange({ hiddenValues: hidden.filter((h) => h !== v) })}>{v}</Menu.Item>
+            ))}
+          </Menu.Dropdown>
+        </Menu>
+      )}
+    </Stack>
+  );
+}
+
+function TreemapGroupRow({
+  value,
+  color,
+  name,
+  settings,
+  onChange,
+  onRemove,
+}: {
+  value: string;
+  color: string;
+  name?: string;
+  settings: VizSettings;
+  onChange: (p: Partial<VizSettings>) => void;
+  onRemove: () => void;
+}) {
+  const [open, setOpen] = useState(false);
+  return (
+    <Group gap={8} wrap="nowrap" style={{ border: `1px solid ${MB_COLORS.border}`, borderRadius: 8, padding: "6px 8px 6px 12px" }}>
+      <ColorDot size={20} value={color} onChange={(v) => onChange({ colors: { ...settings.colors, [value]: v } })} />
+      <Text fz="sm" fw={700} title={value} style={{ flex: 1, minWidth: 0, color: MB_COLORS.textPrimary }}>
+        {name ?? value}
+      </Text>
+      <Popover opened={open} onChange={setOpen} position="left-start" withArrow shadow="lg" width={260} withinPortal>
+        <Popover.Target>
+          <ActionIcon variant="subtle" color="gray" aria-label={`Paramètres de ${value}`} onClick={() => setOpen((o) => !o)}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.5" /><circle cx="10" cy="10" r="1.5" /><circle cx="16" cy="10" r="1.5" /></svg>
+          </ActionIcon>
+        </Popover.Target>
+        <Popover.Dropdown p="sm">
+          <Stack gap="xs">
+            <TextInput
+              size="sm"
+              label="Nom affiché"
+              value={name ?? value}
+              onChange={(e) => onChange({ series: { ...settings.series, [value]: { ...settings.series[value], name: e.currentTarget.value } } })}
+            />
+            <Label>Couleur</Label>
+            <SimpleGrid cols={4} spacing={8}>
+              {SWATCHES.map((c) => (
+                <UnstyledButton
+                  key={c}
+                  aria-label={c}
+                  onClick={() => onChange({ colors: { ...settings.colors, [value]: c } })}
+                  style={{ width: 24, height: 24, borderRadius: "50%", background: c, outline: c.toLowerCase() === color.toLowerCase() ? `2px solid ${MB_COLORS.textPrimary}` : "none", outlineOffset: 2 }}
+                />
+              ))}
+            </SimpleGrid>
+          </Stack>
+        </Popover.Dropdown>
+      </Popover>
+      <ActionIcon variant="subtle" color="gray" aria-label={`Retirer ${value}`} onClick={onRemove}>
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+      </ActionIcon>
+    </Group>
+  );
+}
+
+function DonneesTab({ vizId, dataset, settings, onChange, allCols, dimOptions, metricOptions, activeMetrics }: any) {
   const FieldSelect = ({ label, value, data, onPick, clearable = false, placeholder = "Sélectionnez un champ" }: any) => (
     <Stack gap={6}>
       <Label>{label}</Label>
@@ -588,9 +709,21 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
   if (vizId === "treemap") {
     return (
       <Stack gap="md">
-        <FieldSelect label="Dimension" value={settings.dimension} data={dimOptions} onPick={(v: string) => v && onChange({ dimension: v })} />
-        <FieldSelect label="Grouping (2ᵉ niveau)" value={settings.breakout} data={dimOptions.filter((o: any) => o.value !== settings.dimension)} onPick={(v: string) => onChange({ breakout: v ?? undefined })} clearable placeholder="(optionnel)" />
-        <FieldSelect label="Mesure" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
+        <Stack gap={6}>
+          <FieldSelect label="Grouping" value={settings.dimension} data={dimOptions} onPick={(v: string) => v && onChange({ dimension: v, hiddenValues: [] })} />
+          {/* The values of the grouping column, each with its own colour —
+              this is the list Metabase shows indented under "Grouping". */}
+          <TreemapGroupList dataset={dataset} settings={settings} onChange={onChange} />
+        </Stack>
+        <FieldSelect
+          label="Sub-grouping"
+          value={settings.breakout}
+          data={dimOptions.filter((o: any) => o.value !== settings.dimension)}
+          onPick={(v: string) => onChange({ breakout: v ?? undefined })}
+          clearable
+          placeholder="Sélectionner une colonne"
+        />
+        <FieldSelect label="Valeur" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
       </Stack>
     );
   }

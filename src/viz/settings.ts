@@ -183,6 +183,8 @@ export interface VizSettings {
   decreaseColor: string; // "Diminution"
 
   // --- treemap ---
+  /** Grouping values the user removed from the chart (the "×" on each row). */
+  hiddenValues: string[];
   treemapShowLeafLabels: boolean;
   treemapShowLeafValues: boolean;
   treemapShowParentLabels: boolean;
@@ -252,6 +254,7 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     showOutliers: true,
     quartileStyle: "box",
     scatterShowLabels: false,
+    hiddenValues: [],
     treemapShowLeafLabels: true,
     treemapShowLeafValues: false,
     treemapShowParentLabels: true,
@@ -288,12 +291,11 @@ export function settingsForQuery(
     metrics,
     // Single-value vizs read these explicitly.
     scalarField: aggCols[0].name,
-    // Map / sankey / pivot field pickers follow the same query shape.
+    // Map / pivot field pickers follow the same query shape. The Sankey is
+    // left empty on purpose: guessing its columns is what makes it unreadable.
     locationField: breakoutCols[0]?.name ?? base.locationField,
     rowField: breakoutCols[0]?.name ?? base.rowField,
     colField: breakoutCols[1]?.name ?? base.colField,
-    sourceField: breakoutCols[0]?.name ?? base.sourceField,
-    targetField: breakoutCols[1]?.name ?? base.targetField,
     breakout: breakoutCols[1]?.name,
   };
 }

@@ -161,7 +161,8 @@ export function SummarizeSidebar({
     onChange({ ...summarize, buckets: { ...(summarize.buckets ?? {}), [name]: bucket } });
 
   return (
-    <Box style={{ width: 320, borderLeft: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.bgLight, display: "flex", flexDirection: "column", height: "100%" }}>
+    // 328 − 32px of padding − the scrollbar leaves Metabase's 286.56px rows.
+    <Box style={{ width: 328, borderLeft: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.bgLight, display: "flex", flexDirection: "column", height: "100%" }}>
       <ScrollArea style={{ flex: 1 }}>
         <Stack gap="sm" py="md">
           <Text fw={700} fz={17} px="lg" style={{ color: MB_COLORS.textPrimary }}>Résumer par</Text>
@@ -249,12 +250,15 @@ export function SummarizeSidebar({
                     display: "flex",
                     alignItems: "center",
                     borderRadius: 6,
+                    // Metabase's dimension rows are a fixed 34px tall, and the
+                    // green highlight covers exactly that box.
+                    height: 34,
                     background: active ? "var(--mantine-color-summarize-6)" : "transparent",
                   }}
                 >
                   <UnstyledButton
                     onClick={() => toggleBreakout(c)}
-                    style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}
+                    style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, height: "100%", padding: "0 10px" }}
                   >
                     <TypeGlyph col={c} active={active} />
                     <Text
@@ -327,7 +331,7 @@ export function SummarizeButton({ active, onClick }: { active: boolean; onClick:
       onClick={onClick}
       data-active={active || undefined}
       leftSection={
-        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 3.5h11L9 10l6 6.5H4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M15 3.5H4l6 6.5-6 6.5h11" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
       }
     >
       Résumer

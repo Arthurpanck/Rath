@@ -1,6 +1,6 @@
 import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
-import type { Column, Dataset } from "../../data/types";
+import type { Dataset } from "../../data/types";
 import { getDimensions, getMetrics } from "../../data/types";
 import type { Aggregation, MapRegion, VizSettings } from "../settings";
 import { findColumn } from "../settings";
@@ -8,11 +8,6 @@ import { nf2 } from "../format";
 import { ACCENT_COLORS, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
 const nf = (v: number) => nf2(v);
-
-function twoDimensions(dataset: Dataset): [Column | undefined, Column | undefined] {
-  const dims = getDimensions(dataset);
-  return [dims[0], dims[1] ?? dims[0]];
-}
 
 function reduceWith(vals: number[], agg: Aggregation): number {
   if (agg === "count") return vals.length;
@@ -27,14 +22,18 @@ function reduceWith(vals: number[], agg: Aggregation): number {
 // ---------------------------------------------------------------- Sankey ----
 
 export function buildSankeyOption(dataset: Dataset, settings: VizSettings): EChartsOption {
-  const [autoSrc, autoTgt] = twoDimensions(dataset);
-  const source = findColumn(dataset, settings.sourceField) ?? autoSrc;
-  const target =
-    findColumn(dataset, settings.targetField) ?? (settings.breakout ? findColumn(dataset, settings.breakout) : undefined) ?? autoTgt;
-  const metric = findColumn(dataset, settings.metrics?.[0]) ?? getMetrics(dataset)[0];
+  // Nothing is guessed here: a Sankey built from arbitrary columns of a large
+  // table produces thousands of nodes, which is both unreadable and slow. The
+  // user picks source, destination and measure explicitly.
+  const source = findColumn(dataset, settings.sourceField);
+  const target = findColumn(dataset, settings.targetField);
+  const metric = findColumn(dataset, settings.metrics?.[0]);
 
-  if (!source || !target || source.index === target.index) {
-    return emptyMessage("Le Sankey nécessite deux colonnes de catégories distinctes (source et cible).");
+  if (!source || !target) {
+    return emptyMessage("Choisissez une source et une destination dans les paramètres du graphique.");
+  }
+  if (source.index === target.index) {
+    return emptyMessage("La source et la destination doivent être deux colonnes distinctes.");
   }
 
   const linkMap = new Map<string, { s: string; t: string; v: number }>();
@@ -52,6 +51,15 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
     const ex = linkMap.get(key);
     if (ex) ex.v += v;
     else linkMap.set(key, { s: sk, t: tk, v });
+  }
+
+  // Guard against a combination that would freeze the browser.
+  const MAX_NODES = 150;
+  const MAX_LINKS = 600;
+  if (nodeSet.size > MAX_NODES || linkMap.size > MAX_LINKS) {
+    return emptyMessage(
+      `Trop de valeurs distinctes pour un Sankey (${nodeSet.size} n\u0153uds, ${linkMap.size} liens). Filtrez ou résumez les données, ou choisissez des colonnes moins variées.`,
+    );
   }
 
   const nodes = [...nodeSet].map((name, i) => ({ name, itemStyle: { color: seriesColor(i) } }));

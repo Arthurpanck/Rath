@@ -75,6 +75,20 @@ export function QueryBuilder({
 
   const patchSettings = (patch: Partial<VizSettings>) => setSettings((s) => ({ ...s, ...patch }));
 
+  // The chart-settings panel and the "Résumer" sidebar are mutually exclusive:
+  // opening one closes the other.
+  const openSidebar = (next: SidebarMode | ((s: SidebarMode) => SidebarMode)) => {
+    setSidebar((current) => {
+      const value = typeof next === "function" ? next(current) : next;
+      if (value !== "closed") setSummarizeOpen(false);
+      return value;
+    });
+  };
+  const openSummarize = (open: boolean) => {
+    setSummarizeOpen(open);
+    if (open) setSidebar("closed");
+  };
+
   const effectiveViz: VizId = mode === "table" ? "table" : selected;
 
   const renderStart = useMemo(() => performance.now(), [effectiveViz, dataset, settings]);
@@ -115,7 +129,7 @@ export function QueryBuilder({
             chipsVisible={filterBarOpen}
             onToggleChips={() => setFilterBarOpen((o) => !o)}
           />
-          <SummarizeButton active={summarizeOpen || summarize.aggregations.length > 0} onClick={() => setSummarizeOpen((o) => !o)} />
+          <SummarizeButton active={summarizeOpen || summarize.aggregations.length > 0} onClick={() => openSummarize(!summarizeOpen)} />
           <Button size="sm" variant="default" onClick={onReset}>
             Importer un autre CSV
           </Button>
@@ -146,10 +160,10 @@ export function QueryBuilder({
                 setMode("chart");
               }
             }}
-            onDone={() => setSidebar("closed")}
+            onDone={() => openSidebar("closed")}
             onOpenSettings={() => {
               setMode("chart");
-              setSidebar("settings");
+              openSidebar("settings");
             }}
           />
         )}
@@ -160,7 +174,7 @@ export function QueryBuilder({
             dataset={dataset}
             settings={settings}
             onChange={patchSettings}
-            onBack={() => setSidebar("picker")}
+            onBack={() => openSidebar("picker")}
           />
         )}
 
@@ -198,10 +212,10 @@ export function QueryBuilder({
             rowCount={dataset.rows.length}
             mode={mode}
             onToggleMode={setMode}
-            onOpenPicker={() => setSidebar((s) => (s === "picker" ? "closed" : "picker"))}
+            onOpenPicker={() => openSidebar((s) => (s === "picker" ? "closed" : "picker"))}
             onOpenSettings={() => {
               setMode("chart");
-              setSidebar((s) => (s === "settings" ? "closed" : "settings"));
+              openSidebar((s) => (s === "settings" ? "closed" : "settings"));
             }}
             pickerOpen={sidebar === "picker"}
             settingsOpen={sidebar === "settings"}
@@ -212,7 +226,7 @@ export function QueryBuilder({
         </Box>
 
         {summarizeOpen && (
-          <SummarizeSidebar dataset={rawDataset} summarize={summarize} onChange={setSummarize} onDone={() => setSummarizeOpen(false)} sourceName={datasetName} />
+          <SummarizeSidebar dataset={rawDataset} summarize={summarize} onChange={setSummarize} onDone={() => openSummarize(false)} sourceName={datasetName} />
         )}
       </Box>
     </Box>
