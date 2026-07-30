@@ -1,9 +1,9 @@
 import { useState } from "react";
-import { ActionIcon, Box, Button, Divider, Group, Popover, ScrollArea, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Box, Button, Divider, Group, Menu, Popover, ScrollArea, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
 import type { Column, Dataset } from "../data/types";
 import { isMetric } from "../data/types";
-import type { AggFn, Aggregation, Summarize } from "../data/query";
-import { AGG_MENU, describeAggregation, kindOf } from "../data/query";
+import type { AggFn, Aggregation, Bucket, Summarize } from "../data/query";
+import { AGG_MENU, bucketLabel, bucketsFor, defaultBucketFor, describeAggregation, kindOf } from "../data/query";
 import { MB_COLORS } from "../viz/options/constants";
 
 const SearchIcon = () => (
@@ -127,11 +127,14 @@ export function SummarizeSidebar({
   summarize,
   onChange,
   onDone,
+  sourceName,
 }: {
   dataset: Dataset;
   summarize: Summarize;
   onChange: (s: Summarize) => void;
   onDone: () => void;
+  /** Source table name, shown as the group label above the dimensions. */
+  sourceName: string;
 }) {
   const [search, setSearch] = useState("");
   const [addOpen, setAddOpen] = useState(false);
@@ -141,17 +144,27 @@ export function SummarizeSidebar({
   const addAgg = (a: Aggregation) => onChange({ ...summarize, aggregations: [...summarize.aggregations, a] });
   const replaceAgg = (i: number, a: Aggregation) => onChange({ ...summarize, aggregations: summarize.aggregations.map((x, j) => (j === i ? a : x)) });
   const removeAgg = (i: number) => onChange({ ...summarize, aggregations: summarize.aggregations.filter((_, j) => j !== i) });
-  const toggleBreakout = (name: string) =>
-    onChange({
-      ...summarize,
-      breakouts: summarize.breakouts.includes(name) ? summarize.breakouts.filter((n) => n !== name) : [...summarize.breakouts, name],
-    });
+
+  /** Picking a dimension applies Metabase's default bucket (months, auto bins). */
+  const toggleBreakout = (col: Column) => {
+    const buckets = { ...(summarize.buckets ?? {}) };
+    if (summarize.breakouts.includes(col.name)) {
+      delete buckets[col.name];
+      onChange({ ...summarize, breakouts: summarize.breakouts.filter((n) => n !== col.name), buckets });
+    } else {
+      const def = defaultBucketFor(col);
+      if (def) buckets[col.name] = def;
+      onChange({ ...summarize, breakouts: [...summarize.breakouts, col.name], buckets });
+    }
+  };
+  const setBucket = (name: string, bucket: Bucket) =>
+    onChange({ ...summarize, buckets: { ...(summarize.buckets ?? {}), [name]: bucket } });
 
   return (
-    <Box style={{ width: 300, borderLeft: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.bgLight, display: "flex", flexDirection: "column", height: "100%" }}>
+    <Box style={{ width: 320, borderLeft: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.bgLight, display: "flex", flexDirection: "column", height: "100%" }}>
       <ScrollArea style={{ flex: 1 }}>
-        <Stack gap="sm" p="md">
-          <Text fw={700} fz="sm" style={{ color: MB_COLORS.textPrimary }}>Résumer par</Text>
+        <Stack gap="sm" py="md">
+          <Text fw={700} fz={17} px="lg" style={{ color: MB_COLORS.textPrimary }}>Résumer par</Text>
 
           {summarize.aggregations.length === 0 ? (
             <Popover opened={addOpen} onChange={setAddOpen} position="bottom-start" shadow="lg" withinPortal>
@@ -159,6 +172,7 @@ export function SummarizeSidebar({
                 <UnstyledButton
                   onClick={() => setAddOpen((o) => !o)}
                   className="mb-row-green"
+                  mx="lg"
                   style={{ display: "flex", alignItems: "center", gap: 10, padding: "10px 14px", borderRadius: 8, background: MB_COLORS.bgLight, border: `1px solid ${MB_COLORS.border}` }}
                 >
                   <Text fz="lg" fw={700} style={{ color: "var(--mantine-color-summarize-6)", lineHeight: 1 }}>+</Text>
@@ -170,7 +184,7 @@ export function SummarizeSidebar({
               </Popover.Dropdown>
             </Popover>
           ) : (
-          <Group gap={6} wrap="wrap">
+          <Group gap="sm" wrap="wrap" align="flex-start" px="lg">
             {summarize.aggregations.map((a, i) => (
               <Popover key={i} opened={editing === i} onChange={(o) => setEditing(o ? i : null)} position="bottom-start" shadow="lg" withinPortal>
                 <Popover.Target>
@@ -191,9 +205,14 @@ export function SummarizeSidebar({
 
             <Popover opened={addOpen} onChange={setAddOpen} position="bottom-start" shadow="lg" withinPortal>
               <Popover.Target>
-                <ActionIcon variant="default" size="md" radius="sm" aria-label="Ajouter une agrégation" onClick={() => setAddOpen((o) => !o)}>
-                  <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke={MB_COLORS.textSecondary} strokeWidth="1.8" strokeLinecap="round" /></svg>
-                </ActionIcon>
+                {/* A plain "+", not an outlined square — as in Metabase. */}
+                <UnstyledButton
+                  aria-label="Ajouter une agrégation"
+                  onClick={() => setAddOpen((o) => !o)}
+                  style={{ display: "flex", alignItems: "center", padding: "4px 6px", color: "var(--mantine-color-summarize-6)" }}
+                >
+                  <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                </UnstyledButton>
               </Popover.Target>
               <Popover.Dropdown p={0}>
                 <AggPicker dataset={dataset} onPick={addAgg} onClose={() => setAddOpen(false)} />
@@ -205,31 +224,84 @@ export function SummarizeSidebar({
           {/* "Regrouper par" only appears once something is being summarised. */}
           {summarize.aggregations.length > 0 && (
           <>
-          <Divider my="xs" />
+          <Divider my="md" />
 
-          <Text fw={700} fz="sm" style={{ color: MB_COLORS.textPrimary }}>Regrouper par</Text>
-          <TextInput size="xs" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.currentTarget.value)} rightSection={<SearchIcon />} />
+          <Stack gap={0} px="lg">
+            <Text component="h5" fw={900} fz="sm" m={0} style={{ color: MB_COLORS.textPrimary }}>Regrouper par</Text>
+            <Box my="sm" />
+            <Box mb="md">
+              <TextInput size="sm" placeholder="Rechercher..." value={search} onChange={(e) => setSearch(e.currentTarget.value)} leftSection={<SearchIcon />} />
+            </Box>
 
-          <Stack gap={2}>
+            {/* Dimensions, grouped under the name of their source. */}
+            <Text fz="xs" fw={700} mb={4} title={sourceName} style={{ color: MB_COLORS.textTertiary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+              {sourceName}
+            </Text>
             {groupable.map((c) => {
               const active = summarize.breakouts.includes(c.name);
+              const options = bucketsFor(c);
+              const bucket = summarize.buckets?.[c.name];
               return (
-                <UnstyledButton
+                <Box
                   key={c.name}
-                  className={active ? undefined : "mb-row-green"}
-                  onClick={() => toggleBreakout(c.name)}
-                  style={{ padding: "7px 10px", borderRadius: 6, background: active ? "var(--mantine-color-summarize-6)" : "transparent", display: "flex", alignItems: "center", gap: 8 }}
+                  className={active ? undefined : "mb-dim"}
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    borderRadius: 6,
+                    background: active ? "var(--mantine-color-summarize-6)" : "transparent",
+                  }}
                 >
-                  <TypeGlyph col={c} active={active} />
-                  <Text fz="sm" fw={active ? 700 : 400} style={{ flex: 1, color: active ? "#fff" : MB_COLORS.textPrimary }}>
-                    {c.display_name}
-                  </Text>
-                  {active ? (
-                    <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" /></svg>
-                  ) : (
-                    <Text fz="xs" style={{ color: MB_COLORS.textTertiary }}>+</Text>
+                  <UnstyledButton
+                    onClick={() => toggleBreakout(c)}
+                    style={{ flex: 1, minWidth: 0, display: "flex", alignItems: "center", gap: 8, padding: "8px 10px" }}
+                  >
+                    <TypeGlyph col={c} active={active} />
+                    <Text
+                      className="mb-dim-name"
+                      fz="sm"
+                      fw={700}
+                      title={c.display_name}
+                      style={{ minWidth: 0, color: active ? "#fff" : MB_COLORS.textPrimary, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}
+                    >
+                      {c.display_name}
+                    </Text>
+                  </UnstyledButton>
+
+                  {/* Temporal unit / binning strategy, on the picked dimension. */}
+                  {active && options.length > 0 && (
+                    <Menu shadow="md" width={240} position="bottom-end" withinPortal>
+                      <Menu.Target>
+                        <UnstyledButton
+                          aria-label={kindOf(c) === "date" ? "Compartiment temporel" : "Stratégie de regroupement en classes"}
+                          style={{ display: "flex", alignItems: "center", gap: 4, maxWidth: "55%", flexShrink: 0, padding: "0 8px", color: "#fff" }}
+                        >
+                          <Text fz="xs" fw={700} style={{ minWidth: 0, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis" }}>
+                            {bucketLabel(c, bucket)}
+                          </Text>
+                          <svg width="12" height="12" viewBox="0 0 20 20" fill="none" style={{ flexShrink: 0 }}><path d="M4 7l6 6 6-6" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" /></svg>
+                        </UnstyledButton>
+                      </Menu.Target>
+                      <Menu.Dropdown>
+                        {options.map((o) => (
+                          <Menu.Item key={o.value} onClick={() => setBucket(c.name, o.value)} fw={o.value === bucket ? 700 : 400}>
+                            {o.label}
+                          </Menu.Item>
+                        ))}
+                      </Menu.Dropdown>
+                    </Menu>
                   )}
-                </UnstyledButton>
+
+                  {active ? (
+                    <UnstyledButton aria-label="Supprimer la dimension" onClick={() => toggleBreakout(c)} style={{ display: "flex", padding: "0 10px" }}>
+                      <svg width="12" height="12" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="#fff" strokeWidth="2.2" strokeLinecap="round" /></svg>
+                    </UnstyledButton>
+                  ) : (
+                    <UnstyledButton className="mb-dim-add" aria-label="Ajouter une dimension" onClick={() => toggleBreakout(c)} style={{ display: "flex", padding: "0 10px", color: "var(--mantine-color-summarize-6)" }}>
+                      <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M10 4v12M4 10h12" stroke="currentColor" strokeWidth="2" strokeLinecap="round" /></svg>
+                    </UnstyledButton>
+                  )}
+                </Box>
               );
             })}
           </Stack>
@@ -249,12 +321,14 @@ export function SummarizeSidebar({
 export function SummarizeButton({ active, onClick }: { active: boolean; onClick: () => void }) {
   return (
     <Button
-      size="xs"
-      radius="md"
-      variant={active ? "filled" : "default"}
+      size="sm"
+      variant="default"
       color="summarize"
       onClick={onClick}
-      leftSection={<Text fz="sm" fw={700} component="span">Σ</Text>}
+      data-active={active || undefined}
+      leftSection={
+        <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M4 3.5h11L9 10l6 6.5H4" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+      }
     >
       Résumer
     </Button>

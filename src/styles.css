@@ -53,6 +53,27 @@ body {
   color: var(--mantine-color-summarize-8) !important;
 }
 
+/* "Regrouper par" rows: the + only shows on hover, like Metabase. */
+.mb-dim .mb-dim-add {
+  opacity: 0;
+}
+.mb-dim:hover {
+  background: var(--mantine-color-summarize-0);
+}
+.mb-dim:hover .mb-dim-name {
+  color: var(--mantine-color-summarize-8) !important;
+}
+.mb-dim:hover .mb-dim-add {
+  opacity: 1;
+}
+
+/* The "Résumer" header button, once a summary is active. */
+.mantine-Button-root[data-active="true"] {
+  background: var(--mantine-color-summarize-0);
+  border-color: var(--mantine-color-summarize-6);
+  color: var(--mantine-color-summarize-8);
+}
+
 /* Slightly tighter dropdown items, closer to Metabase's density. */
 .mantine-Menu-item {
   padding: 7px 10px;

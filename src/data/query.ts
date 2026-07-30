@@ -60,6 +60,75 @@ export interface Summarize {
   aggregations: Aggregation[];
   /** "Regrouper par" dimensions, in order. */
   breakouts: string[];
+  /**
+   * Per-breakout bucketing, keyed by column name: a temporal unit for dates
+   * ("par mois") or a binning strategy for numbers ("Regroupement en classes").
+   * Metabase attaches this to the breakout itself; a side map keeps the
+   * breakout list a plain array of names.
+   */
+  buckets?: Record<string, Bucket>;
+}
+
+/** Temporal unit or binning strategy applied to a "Regrouper par" column. */
+export type Bucket = "day" | "week" | "month" | "quarter" | "year" | "auto" | "10" | "50" | "100" | "none";
+
+const DATE_BUCKETS: { value: Bucket; label: string }[] = [
+  { value: "day", label: "par jour" },
+  { value: "week", label: "par semaine" },
+  { value: "month", label: "par mois" },
+  { value: "quarter", label: "par trimestre" },
+  { value: "year", label: "par année" },
+];
+
+const NUM_BUCKETS: { value: Bucket; label: string }[] = [
+  { value: "auto", label: "Regroupement en classes automatique" },
+  { value: "10", label: "10 classes" },
+  { value: "50", label: "50 classes" },
+  { value: "100", label: "100 classes" },
+  { value: "none", label: "Ne pas regrouper en classes" },
+];
+
+function isIdColumn(col: Column): boolean {
+  return /(^|_)id($|_)|^_mb_row_id$/i.test(col.name);
+}
+
+/** The bucket options offered for a column — none for plain text. */
+export function bucketsFor(col: Column | undefined): { value: Bucket; label: string }[] {
+  const kind = kindOf(col);
+  if (kind === "date") return DATE_BUCKETS;
+  if (kind === "number") return NUM_BUCKETS;
+  return [];
+}
+
+/** Metabase's defaults: months for dates, automatic bins for plain numbers. */
+export function defaultBucketFor(col: Column | undefined): Bucket | undefined {
+  if (!col) return undefined;
+  const kind = kindOf(col);
+  if (kind === "date") return "month";
+  if (kind === "number") return isIdColumn(col) ? "none" : "auto";
+  return undefined;
+}
+
+export function bucketLabel(col: Column | undefined, bucket: Bucket | undefined): string {
+  return bucketsFor(col).find((b) => b.value === bucket)?.label ?? "";
+}
+
+/** Short suffix Metabase appends to a bucketed date column ("Date: Mois"). */
+function bucketSuffix(bucket: Bucket): string {
+  switch (bucket) {
+    case "day":
+      return "Jour";
+    case "week":
+      return "Semaine";
+    case "month":
+      return "Mois";
+    case "quarter":
+      return "Trimestre";
+    case "year":
+      return "Année";
+    default:
+      return "";
+  }
 }
 
 export const AGG_FN_LABEL: Record<AggFn, string> = {
@@ -365,6 +434,65 @@ export function applyFilters(dataset: Dataset, filters: Filter[]): Dataset {
   return { cols: dataset.cols, rows };
 }
 
+/** Local yyyy-mm-dd, so bucketed dates stay sortable and parseable. */
+function isoDay(d: Date): string {
+  const p = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${p(d.getMonth() + 1)}-${p(d.getDate())}`;
+}
+
+/** Truncate a date value to the start of its bucket. */
+function truncateDate(value: unknown, bucket: Bucket): unknown {
+  const t = Date.parse(String(value).replace(/\//g, "-"));
+  if (isNaN(t)) return value;
+  const d = new Date(t);
+  switch (bucket) {
+    case "week":
+      d.setDate(d.getDate() - ((d.getDay() + 6) % 7)); // ISO weeks start Monday
+      break;
+    case "month":
+      d.setDate(1);
+      break;
+    case "quarter":
+      d.setMonth(Math.floor(d.getMonth() / 3) * 3, 1);
+      break;
+    case "year":
+      d.setMonth(0, 1);
+      break;
+    default:
+      break; // "day": the date itself
+  }
+  d.setHours(0, 0, 0, 0);
+  return isoDay(d);
+}
+
+/** A "nice" bin width (1, 2 or 5 × a power of ten) for roughly `target` bins. */
+function niceWidth(range: number, target: number): number {
+  if (!(range > 0)) return 1;
+  const raw = range / target;
+  const mag = 10 ** Math.floor(Math.log10(raw));
+  const norm = raw / mag;
+  const step = norm <= 1 ? 1 : norm <= 2 ? 2 : norm <= 5 ? 5 : 10;
+  return step * mag;
+}
+
+/** Bin width for a numeric column, or null when it should not be binned. */
+function binWidthFor(dataset: Dataset, col: Column, bucket: Bucket): number | null {
+  if (bucket === "none") return null;
+  let min = Infinity;
+  let max = -Infinity;
+  for (const r of dataset.rows) {
+    const v = Number(r[col.index]);
+    if (isNaN(v)) continue;
+    if (v < min) min = v;
+    if (v > max) max = v;
+  }
+  if (!isFinite(min) || !isFinite(max) || max === min) return null;
+  const range = max - min;
+  if (bucket === "auto") return niceWidth(range, 12);
+  const count = Number(bucket);
+  return count > 0 ? range / count : null;
+}
+
 /** Group-by + aggregate ("Résumer"), producing a new, narrower dataset. */
 export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
   if (!s || s.aggregations.length === 0) return dataset;
@@ -373,8 +501,28 @@ export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
     .map((n) => dataset.cols.find((c) => c.name === n))
     .filter((c): c is Column => !!c);
 
+  // Resolve each breakout's bucket into a value transform applied before grouping.
+  const buckets = groupCols.map((c) => {
+    const bucket = s.buckets?.[c.name];
+    if (!bucket) return null;
+    if (kindOf(c) === "date") return (v: unknown) => truncateDate(v, bucket);
+    if (kindOf(c) === "number") {
+      const w = binWidthFor(dataset, c, bucket);
+      if (w == null) return null;
+      return (v: unknown) => {
+        const n = Number(v);
+        return isNaN(n) ? v : Math.floor(n / w) * w;
+      };
+    }
+    return null;
+  });
+
   const cols: Column[] = [
-    ...groupCols.map((c, i) => ({ ...c, index: i })),
+    ...groupCols.map((c, i) => {
+      const bucket = s.buckets?.[c.name];
+      const suffix = bucket && kindOf(c) === "date" ? bucketSuffix(bucket) : "";
+      return { ...c, index: i, display_name: suffix ? `${c.display_name}: ${suffix}` : c.display_name };
+    }),
     ...s.aggregations.map((a, i) => ({
       name: aggName(a),
       display_name: describeAggregation(dataset, a),
@@ -394,7 +542,10 @@ export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
 
   const groups = new Map<string, { key: unknown[]; rows: unknown[][] }>();
   for (const r of dataset.rows) {
-    const key = groupCols.map((c) => r[c.index]);
+    const key = groupCols.map((c, i) => {
+      const bucket = buckets[i];
+      return bucket ? bucket(r[c.index]) : r[c.index];
+    });
     const id = key.map((k) => String(k)).join(" ");
     if (!groups.has(id)) groups.set(id, { key, rows: [] });
     groups.get(id)!.rows.push(r);
@@ -407,6 +558,12 @@ export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
       return reduce(col ? groupRows.map((r) => r[col.index]) : groupRows, a.fn);
     }),
   ]);
+
+  // Bucketed groups are ranges or periods: they only read correctly in order.
+  if (buckets[0]) {
+    const numeric = kindOf(groupCols[0]) === "number";
+    rows.sort((a, b) => (numeric ? Number(a[0]) - Number(b[0]) : String(a[0]).localeCompare(String(b[0]))));
+  }
   accumulate(rows, s.aggregations, groupCols.length);
 
   return { cols, rows };

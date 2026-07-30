@@ -10,7 +10,7 @@ import { settingsForQuery } from "../viz/settings";
 import { exportPng } from "../data/export";
 import type { Filter, Summarize } from "../data/query";
 import { applyQuery } from "../data/query";
-import { FilterButton } from "./FilterPopover";
+import { FilterBar, FilterButton } from "./FilterPopover";
 import { SummarizeButton, SummarizeSidebar } from "./SummarizeSidebar";
 import { VizPickerSidebar } from "./VizPickerSidebar";
 import { SettingsPanel } from "./SettingsPanel";
@@ -34,6 +34,9 @@ export function QueryBuilder({
   const [filters, setFilters] = useState<Filter[]>([]);
   const [summarize, setSummarize] = useState<Summarize>({ aggregations: [], breakouts: [] });
   const [summarizeOpen, setSummarizeOpen] = useState(false);
+  // Metabase shows the active filters in a bar under the header, toggled by
+  // the counter attached to the "Filtre" button.
+  const [filterBarOpen, setFilterBarOpen] = useState(true);
   const dataset = useMemo(() => applyQuery(rawDataset, filters, summarize), [rawDataset, filters, summarize]);
 
   const [selected, setSelected] = useState<VizId>(() => defaultDisplay(dataset, null));
@@ -102,21 +105,29 @@ export function QueryBuilder({
             {dataset.cols.length} colonnes · {dataset.rows.length} lignes
           </Text>
         </Group>
+        {/* Metabase's action panel: Filtre (+ count), Résumer, then Sauvegarder. */}
         <Group gap="xs" wrap="nowrap" style={{ flexShrink: 0 }}>
-          <FilterButton dataset={rawDataset} filters={filters} onChange={setFilters} />
+          <FilterButton
+            dataset={rawDataset}
+            filters={filters}
+            onChange={setFilters}
+            sourceName={datasetName}
+            chipsVisible={filterBarOpen}
+            onToggleChips={() => setFilterBarOpen((o) => !o)}
+          />
           <SummarizeButton active={summarizeOpen || summarize.aggregations.length > 0} onClick={() => setSummarizeOpen((o) => !o)} />
-          <button
-            onClick={onReset}
-            style={{ border: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.white, color: MB_COLORS.textSecondary, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
-          >
+          <Button size="sm" variant="default" onClick={onReset}>
             Importer un autre CSV
-          </button>
+          </Button>
+          <Box style={{ width: 1, height: 24, background: MB_COLORS.border }} />
           {/* Placeholder for now: clickable, but saving is not wired up yet. */}
-          <Button variant="subtle" size="xs" color="brand" onClick={() => undefined}>
+          <Button variant="subtle" size="sm" color="brand" onClick={() => undefined}>
             Sauvegarder
           </Button>
         </Group>
       </Group>
+
+      {filterBarOpen && <FilterBar dataset={rawDataset} filters={filters} onChange={setFilters} />}
 
       {/* Body: sidebar (picker | settings) + canvas */}
       <Box style={{ flex: 1, display: "flex", minHeight: 0 }}>
@@ -201,7 +212,7 @@ export function QueryBuilder({
         </Box>
 
         {summarizeOpen && (
-          <SummarizeSidebar dataset={rawDataset} summarize={summarize} onChange={setSummarize} onDone={() => setSummarizeOpen(false)} />
+          <SummarizeSidebar dataset={rawDataset} summarize={summarize} onChange={setSummarize} onDone={() => setSummarizeOpen(false)} sourceName={datasetName} />
         )}
       </Box>
     </Box>
