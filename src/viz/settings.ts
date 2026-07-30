@@ -15,6 +15,8 @@ export type SeparatorStyle = "comma-dot" | "space-comma" | "dot-comma" | "none-d
 export type PieLabelDisplay = "auto" | "on" | "off";
 export type PieValueFormat = "percent" | "value" | "both";
 export type MapRegion = "communes" | "directions" | "ctm";
+export type FunnelDisplay = "funnel" | "bar";
+export type QuartileStyle = "box" | "line";
 
 export interface GaugeRange {
   color: string;
@@ -153,6 +155,15 @@ export interface VizSettings {
 
   // --- funnel ---
   stepField?: string;
+  funnelDisplay: FunnelDisplay; // "Type d'affichage" (entonnoir / barres)
+  funnelShowPercent: boolean; // step-to-step conversion labels
+
+  // --- boxplot ---
+  showOutliers: boolean; // "Afficher les valeurs extrêmes"
+  quartileStyle: QuartileStyle; // "Style des quartiles"
+
+  // --- scatter ---
+  scatterShowLabels: boolean; // label each point with its dimension
 
   // --- waterfall ---
   showTotalColumn: boolean; // "Afficher la colonne de total"
@@ -218,6 +229,11 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     showTotalColumn: true,
     increaseColor: "#88BF4D",
     decreaseColor: "#EF8C8C",
+    funnelDisplay: "funnel",
+    funnelShowPercent: true,
+    showOutliers: true,
+    quartileStyle: "box",
+    scatterShowLabels: false,
     treemapShowLeafLabels: true,
     treemapShowLeafValues: false,
     treemapShowParentLabels: true,

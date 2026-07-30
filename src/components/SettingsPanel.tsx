@@ -46,6 +46,8 @@ import type {
   PieLabelDisplay,
   PieValueFormat,
   PiePercent,
+  FunnelDisplay,
+  QuartileStyle,
   SeparatorStyle,
   SeriesDisplay,
   SeriesOpts,
@@ -101,6 +103,7 @@ const TABS: Record<string, string[]> = {
   sankey: ["Données"],
   map: ["Données"],
   pivot: ["Données"],
+  treemap: ["Données", "Affichage"],
   table: ["Données"],
   object: ["Données"],
 };
@@ -601,6 +604,16 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
       </Stack>
     );
   }
+  if (vizId === "treemap") {
+    return (
+      <Stack gap="md">
+        <FieldSelect label="Dimension" value={settings.dimension} data={dimOptions} onPick={(v: string) => v && onChange({ dimension: v })} />
+        <FieldSelect label="Grouping (2ᵉ niveau)" value={settings.breakout} data={dimOptions.filter((o: any) => o.value !== settings.dimension)} onPick={(v: string) => onChange({ breakout: v ?? undefined })} clearable placeholder="(optionnel)" />
+        <FieldSelect label="Mesure" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
+        <AggSelect settings={settings} onChange={onChange} />
+      </Stack>
+    );
+  }
   if (vizId === "table" || vizId === "object") {
     return <Text fz="sm" style={{ color: MB_COLORS.textTertiary }}>Aucune option de données pour ce type.</Text>;
   }
@@ -706,6 +719,33 @@ function AffichageTab({ vizId, settings, onChange, isCartesian }: any) {
             comboboxProps={{ withinPortal: true }}
             size="sm"
           />
+        </>
+      )}
+
+      {vizId === "funnel" && (
+        <>
+          <Seg<FunnelDisplay> label="Type d'affichage" value={settings.funnelDisplay} onChange={(v) => onChange({ funnelDisplay: v })} data={[{ label: "Entonnoir", value: "funnel" }, { label: "Barres", value: "bar" }]} />
+          <Switch size="sm" checked={settings.funnelShowPercent} label="Afficher le taux de conversion" onChange={(e) => onChange({ funnelShowPercent: e.currentTarget.checked })} />
+        </>
+      )}
+
+      {vizId === "boxplot" && (
+        <>
+          <Switch size="sm" checked={settings.showOutliers} label="Afficher les valeurs extrêmes" onChange={(e) => onChange({ showOutliers: e.currentTarget.checked })} />
+          <Seg<QuartileStyle> label="Style des quartiles" value={settings.quartileStyle} onChange={(v) => onChange({ quartileStyle: v })} data={[{ label: "Boîte", value: "box" }, { label: "Ligne", value: "line" }]} />
+        </>
+      )}
+
+      {vizId === "scatter" && (
+        <Switch size="sm" checked={settings.scatterShowLabels} label="Afficher les étiquettes des points" onChange={(e) => onChange({ scatterShowLabels: e.currentTarget.checked })} />
+      )}
+
+      {vizId === "treemap" && (
+        <>
+          <Switch size="sm" checked={settings.treemapShowLeafLabels} label="Afficher les libellés des feuilles" onChange={(e) => onChange({ treemapShowLeafLabels: e.currentTarget.checked })} />
+          <Switch size="sm" checked={settings.treemapShowLeafValues} label="Afficher les valeurs des feuilles" onChange={(e) => onChange({ treemapShowLeafValues: e.currentTarget.checked })} />
+          <Switch size="sm" checked={settings.treemapShowParentLabels} label="Afficher les libellés des parents" onChange={(e) => onChange({ treemapShowParentLabels: e.currentTarget.checked })} />
+          <Switch size="sm" checked={settings.treemapShowParentValues} label="Afficher les valeurs des parents" onChange={(e) => onChange({ treemapShowParentValues: e.currentTarget.checked })} />
         </>
       )}
 

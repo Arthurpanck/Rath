@@ -1,6 +1,6 @@
 import type { EChartsOption, SeriesOption } from "echarts";
 import type { Dataset } from "../../data/types";
-import { getMetrics } from "../../data/types";
+import { getDimensions, getMetrics } from "../../data/types";
 import { formatDate, pickGranularity } from "../../data/dates";
 import type { VizSettings } from "../settings";
 import { resolveShape } from "../settings";
@@ -311,11 +311,13 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
   const bMax = bubbleVals.length ? Math.max(...bubbleVals) : 1;
   const sizeFor = (v: number) => (bMax === bMin ? 16 : 8 + ((v - bMin) / (bMax - bMin)) * 32);
 
+  const dim = getDimensions(dataset)[0];
   const data = dataset.rows.map((r) => {
     const point: (number | null)[] = [Number(r[xMetric.index]), Number(r[yMetric.index])];
     if (bubble) point.push(Number(r[bubble.index]));
     return point;
   });
+  const names = dim ? dataset.rows.map((r) => String(r[dim.index])) : [];
 
   return {
     grid: baseGrid(),
@@ -328,6 +330,17 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
         symbolSize: bubble ? ((val: number[]) => sizeFor(val[2])) : 10,
         data: data as (number | null)[][],
         itemStyle: { color: colorFor(settings, xMetric?.name ?? "x", 0), opacity: CHART_STYLE.opacity.scatter },
+        emphasis: { focus: "series" as const, itemStyle: { opacity: 1, borderColor: "#fff", borderWidth: 1.5 } },
+        label: settings.scatterShowLabels && names.length
+          ? {
+              show: true,
+              position: "top" as const,
+              color: MB_COLORS.textSecondary,
+              fontFamily: FONT_FAMILY,
+              fontSize: 10,
+              formatter: (p: any) => names[p.dataIndex] ?? "",
+            }
+          : { show: false },
       },
     ],
     textStyle: { fontFamily: FONT_FAMILY },
