@@ -159,6 +159,12 @@ export interface VizSettings {
   increaseColor: string; // "Augmentation"
   decreaseColor: string; // "Diminution"
 
+  // --- treemap ---
+  treemapShowLeafLabels: boolean;
+  treemapShowLeafValues: boolean;
+  treemapShowParentLabels: boolean;
+  treemapShowParentValues: boolean;
+
   // --- smartscalar ---
   comparisons: ComparisonType[];
 
@@ -212,6 +218,10 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     showTotalColumn: true,
     increaseColor: "#88BF4D",
     decreaseColor: "#EF8C8C",
+    treemapShowLeafLabels: true,
+    treemapShowLeafValues: false,
+    treemapShowParentLabels: true,
+    treemapShowParentValues: false,
     comparisons: ["previous"],
     mapRegion: "world",
   };

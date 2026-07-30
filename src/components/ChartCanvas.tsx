@@ -27,7 +27,8 @@ function EChart({
 
   useEffect(() => {
     if (!ref.current) return;
-    const chart = echarts.init(ref.current, undefined, { renderer: "svg" });
+    // Canvas renderer: required for getDataURL("png") to produce a real image.
+    const chart = echarts.init(ref.current, undefined, { renderer: "canvas" });
     chartRef.current = chart;
     onChartReady?.(chart);
     const ro = new ResizeObserver(() => chart.resize());

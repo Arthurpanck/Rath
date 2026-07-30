@@ -112,7 +112,7 @@ function legendCfg(frame: Frame, settings: VizSettings): EChartsOption["legend"]
   };
 }
 
-function dataLabel(settings: VizSettings, normalized: boolean, position: "top" | "right" = "top", opts?: SeriesOpts) {
+function dataLabel(settings: VizSettings, normalized: boolean, position: "top" | "right" | "inside" = "top", opts?: SeriesOpts) {
   const show = settings.showValues || opts?.showValues;
   if (!show) return { show: false };
   const compact = settings.labelFormatting === "compact";
@@ -196,7 +196,12 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       step: o.lineShape === "stepped" ? ("end" as const) : undefined,
       lineStyle: asLine ? { width: LINE_WIDTH[o.lineSize ?? "M"] ?? 2, color, type: o.lineDash ?? "solid" } : undefined,
       areaStyle: asArea ? { color, opacity: areaOpacity } : undefined,
-      label: dataLabel(settings, normalized, "top", o),
+      emphasis: {
+        focus: "series" as const,
+        itemStyle: asLine ? undefined : { shadowBlur: 8, shadowColor: "rgba(0,0,0,0.18)", shadowOffsetY: 1 },
+      },
+      // Stacked segments label inside; otherwise above the mark.
+      label: dataLabel(settings, normalized, stacked ? "inside" : "top", o),
       markLine: i === 0 ? goalMarkLine(settings) : undefined,
     } as SeriesOption;
   });
@@ -278,7 +283,8 @@ function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
       stack: stacked ? "stack" : undefined,
       itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
       barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
-      label: dataLabel(settings, false, "right", o),
+      emphasis: { focus: "series" as const, itemStyle: { shadowBlur: 8, shadowColor: "rgba(0,0,0,0.18)" } },
+      label: dataLabel(settings, false, stacked ? "inside" : "right", o),
     } as SeriesOption;
   });
   return {

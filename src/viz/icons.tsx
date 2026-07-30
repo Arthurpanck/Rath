@@ -27,6 +27,10 @@ export function Chevron({ open, size = 16 }: { open: boolean; size?: number }) {
 }
 
 const ICONS: Record<string, ReactNode> = {
+  // Treemap
+  treemap: (
+    <svg {...S}><rect x="2.5" y="3.5" width="8" height="7" {...stroke} /><rect x="11.5" y="3.5" width="6" height="4" {...stroke} /><rect x="11.5" y="8.5" width="6" height="8" {...stroke} /><rect x="2.5" y="11.5" width="8" height="5" {...stroke} /></svg>
+  ),
   // Table
   table: (
     <svg {...S}><rect x="2.5" y="3.5" width="15" height="13" rx="1.5" {...stroke} /><path d="M2.5 8H17.5M2.5 12H17.5M7.5 3.5V16.5M12.5 3.5V16.5" {...stroke} /></svg>

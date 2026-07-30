@@ -1,8 +1,8 @@
-import { ActionIcon, Button, Group, Menu, Text, UnstyledButton } from "@mantine/core";
+import { ActionIcon, Button, Group, Text, UnstyledButton } from "@mantine/core";
 import { Cog } from "../viz/icons";
 import { MB_COLORS } from "../viz/options/constants";
 
-export type ExportKind = "png" | "svg" | "csv";
+export type ExportKind = "png";
 
 // Segmented table/chart toggle like Metabase's bottom-right switcher.
 function ViewToggle({ mode, onChange }: { mode: "table" | "chart"; onChange: (m: "table" | "chart") => void }) {
@@ -90,19 +90,11 @@ export function BottomBar({
           Affichage de {rowCount} ligne{rowCount > 1 ? "s" : ""}
         </Text>
         <Text fz="xs" style={{ color: MB_COLORS.textTertiary }}>{elapsedMs}ms</Text>
-        <Menu shadow="md" width={180} position="top-end">
-          <Menu.Target>
-            <UnstyledButton aria-label="Exporter" style={{ display: "inline-flex", color: MB_COLORS.textTertiary }}>
-              <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v9m0 0l-3.5-3.5M10 12l3.5-3.5M4 15h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
-            </UnstyledButton>
-          </Menu.Target>
-          <Menu.Dropdown>
-            <Menu.Label>Exporter</Menu.Label>
-            {canExportImage && <Menu.Item onClick={() => onExport("png")}>Image PNG</Menu.Item>}
-            {canExportImage && <Menu.Item onClick={() => onExport("svg")}>Image SVG (vectoriel)</Menu.Item>}
-            <Menu.Item onClick={() => onExport("csv")}>Données CSV</Menu.Item>
-          </Menu.Dropdown>
-        </Menu>
+        {canExportImage && (
+          <UnstyledButton aria-label="Télécharger en PNG" title="Télécharger en PNG" onClick={() => onExport("png")} style={{ display: "inline-flex", color: MB_COLORS.textTertiary }}>
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="none"><path d="M10 3v9m0 0l-3.5-3.5M10 12l3.5-3.5M4 15h12" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" /></svg>
+          </UnstyledButton>
+        )}
       </Group>
     </Group>
   );

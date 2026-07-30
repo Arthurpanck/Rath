@@ -3,15 +3,14 @@ import { Box, Group, Text } from "@mantine/core";
 import type * as echarts from "echarts";
 import type { Dataset } from "../data/types";
 import type { VizId } from "../viz/registry";
-import { VIZ_BY_ID } from "../viz/registry";
+import { VIZ_BY_ID, defaultVizFor } from "../viz/registry";
 import type { VizSettings } from "../viz/settings";
 import { defaultSettings } from "../viz/settings";
-import { exportCsv, exportPng, exportSvg } from "../data/export";
+import { exportPng } from "../data/export";
 import { VizPickerSidebar } from "./VizPickerSidebar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChartCanvas } from "./ChartCanvas";
 import { BottomBar, type ExportKind } from "./BottomBar";
-import { Cog } from "../viz/icons";
 import { MB_COLORS } from "../viz/options/constants";
 
 type SidebarMode = "closed" | "picker" | "settings";
@@ -25,7 +24,8 @@ export function QueryBuilder({
   datasetName: string;
   onReset: () => void;
 }) {
-  const [selected, setSelected] = useState<VizId>("bar");
+  // Metabase-style recommendation decides the chart we open with.
+  const [selected, setSelected] = useState<VizId>(() => defaultVizFor(dataset));
   // Like Metabase: after a query runs you land on the table with the
   // visualization picker collapsed; you open it via the "Visualisation" button.
   const [sidebar, setSidebar] = useState<SidebarMode>("closed");
@@ -33,17 +33,15 @@ export function QueryBuilder({
   const [settings, setSettings] = useState<VizSettings>(() => defaultSettings(dataset));
   const chartRef = useRef<echarts.ECharts | null>(null);
 
-  const handleExport = (kind: ExportKind) => {
-    if (kind === "csv") return exportCsv(dataset, datasetName || "donnees");
+  const handleExport = (_kind: ExportKind) => {
     const chart = chartRef.current;
-    if (!chart) return;
-    if (kind === "png") exportPng(chart, datasetName || "graphique");
-    else exportSvg(chart, datasetName || "graphique");
+    if (chart) exportPng(chart, datasetName || "graphique");
   };
 
   // Reset settings whenever a new dataset is loaded.
   useEffect(() => {
     setSettings(defaultSettings(dataset));
+    setSelected(defaultVizFor(dataset));
   }, [dataset]);
 
   const patchSettings = (patch: Partial<VizSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -129,15 +127,6 @@ export function QueryBuilder({
                 <Text fw={700} style={{ color: MB_COLORS.textPrimary, fontSize: 15 }}>
                   {VIZ_BY_ID[effectiveViz].name}
                 </Text>
-                {mode === "chart" && (
-                  <button
-                    onClick={() => setSidebar(sidebar === "settings" ? "picker" : "settings")}
-                    aria-label="Réglages"
-                    style={{ border: "none", background: "transparent", cursor: "pointer", color: MB_COLORS.textTertiary, display: "inline-flex" }}
-                  >
-                    <Cog size={18} />
-                  </button>
-                )}
               </Group>
               <Box style={{ flex: 1, minHeight: 0 }}>
                 <ChartCanvas

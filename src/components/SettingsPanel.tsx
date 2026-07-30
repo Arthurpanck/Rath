@@ -4,7 +4,6 @@ import {
   Anchor,
   Box,
   Button,
-  ColorInput,
   Group,
   Menu,
   NumberInput,
@@ -673,9 +672,13 @@ function AffichageTab({ vizId, settings, onChange, isCartesian }: any) {
         <>
           <Stack gap={6}>
             <Label>Augmentation/Diminution (optionnel)</Label>
-            <Group gap="xs">
-              <ColorInput size="sm" style={{ flex: 1 }} label="Augmentation" format="hex" swatches={SWATCHES} value={settings.increaseColor} onChange={(v) => onChange({ increaseColor: v })} />
-              <ColorInput size="sm" style={{ flex: 1 }} label="Diminution" format="hex" swatches={SWATCHES} value={settings.decreaseColor} onChange={(v) => onChange({ decreaseColor: v })} />
+            <Group gap={10} wrap="nowrap">
+              <ColorDot value={settings.increaseColor} onChange={(v) => onChange({ increaseColor: v })} />
+              <Text fz="sm" style={{ flex: 1, color: MB_COLORS.textPrimary }}>Augmentation</Text>
+            </Group>
+            <Group gap={10} wrap="nowrap">
+              <ColorDot value={settings.decreaseColor} onChange={(v) => onChange({ decreaseColor: v })} />
+              <Text fz="sm" style={{ flex: 1, color: MB_COLORS.textPrimary }}>Diminution</Text>
             </Group>
           </Stack>
           <Switch size="sm" checked={settings.showTotalColumn} label="Afficher la colonne de total" onChange={(e) => onChange({ showTotalColumn: e.currentTarget.checked })} />
