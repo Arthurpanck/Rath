@@ -42,6 +42,24 @@ United Kingdom,Électronique,380
 United Kingdom,Vêtements,220
 United Kingdom,Maison,290`;
 
+// Grand Lyon communes — exercises the map layers.
+export const SAMPLE_LYON_CSV = `Commune,Population,Equipements
+Lyon,522250,412
+Villeurbanne,152212,168
+Vénissieux,66288,94
+Saint-Priest,46564,71
+Caluire-et-Cuire,43929,58
+Bron,42624,63
+Vaulx-en-Velin,52921,66
+Rillieux-la-Pape,30890,44
+Meyzieu,34067,49
+Décines-Charpieu,29310,41
+Oullins,26359,37
+Sainte-Foy-lès-Lyon,22684,29
+Écully,18545,26
+Tassin-la-Demi-Lune,22803,31
+Givors,19941,27`;
+
 export const SAMPLE_DATASET: Dataset = {
   cols: [
     { name: "Année", display_name: "Année", base_type: "string", index: 0 },

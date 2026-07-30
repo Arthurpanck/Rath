@@ -14,7 +14,7 @@ export type CurrencyPlacement = "header" | "cell";
 export type SeparatorStyle = "comma-dot" | "space-comma" | "dot-comma" | "none-dot" | "apos-dot";
 export type PieLabelDisplay = "auto" | "on" | "off";
 export type PieValueFormat = "percent" | "value" | "both";
-export type MapRegion = "world";
+export type MapRegion = "communes" | "directions" | "ctm";
 
 export interface GaugeRange {
   color: string;
@@ -223,7 +223,7 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     treemapShowParentLabels: true,
     treemapShowParentValues: false,
     comparisons: ["previous"],
-    mapRegion: "world",
+    mapRegion: "communes",
   };
 }
 

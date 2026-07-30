@@ -1,10 +1,11 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import type { Dataset } from "../data/types";
 import type { VizId } from "../viz/registry";
 import type { VizSettings } from "../viz/settings";
 import { resolveShape } from "../viz/settings";
 import { buildEChartsOption, isEChartsViz } from "../viz/options";
+import { ensureRegion } from "../viz/options/geo-sankey";
 import { MB_COLORS } from "../viz/options/constants";
 import { ScalarView, TrendView } from "./ScalarViews";
 import { DataTable } from "./DataTable";
@@ -41,12 +42,19 @@ function EChart({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Map layers are lazy-loaded; bump this once a layer is registered so the
+  // option is rebuilt with the geo data available.
+  const [geoTick, setGeoTick] = useState(0);
+  useEffect(() => {
+    if (vizId === "map") ensureRegion(settings.mapRegion, () => setGeoTick((t) => t + 1));
+  }, [vizId, settings.mapRegion]);
+
   useEffect(() => {
     const chart = chartRef.current;
     if (!chart) return;
     chart.clear();
     chart.setOption(buildEChartsOption(vizId, dataset, settings), true);
-  }, [vizId, dataset, settings]);
+  }, [vizId, dataset, settings, geoTick]);
 
   return <div ref={ref} style={{ width: "100%", height: "100%" }} />;
 }

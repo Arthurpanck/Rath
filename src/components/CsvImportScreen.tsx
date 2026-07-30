@@ -2,7 +2,7 @@ import { useRef, useState } from "react";
 import { Box, Button, Group, Stack, Text } from "@mantine/core";
 import type { Dataset } from "../data/types";
 import { parseCsv } from "../data/csv";
-import { SAMPLE_CSV, SAMPLE_DATES_CSV, SAMPLE_MULTI_CSV } from "../data/sample";
+import { SAMPLE_CSV, SAMPLE_DATES_CSV, SAMPLE_LYON_CSV, SAMPLE_MULTI_CSV } from "../data/sample";
 import { MB_COLORS } from "../viz/options/constants";
 
 export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string) => void }) {
@@ -102,6 +102,10 @@ export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string)
           <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>·</Text>
           <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_MULTI_CSV, "Exemple — ventes par pays et catégorie")}>
             Pays × catégorie
+          </Button>
+          <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>·</Text>
+          <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_LYON_CSV, "Exemple — communes du Grand Lyon")}>
+            Communes du Grand Lyon
           </Button>
         </Group>
       </Stack>

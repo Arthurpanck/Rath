@@ -57,6 +57,7 @@ import type {
 } from "../viz/settings";
 import { resolveShape } from "../viz/settings";
 import { CURRENCIES, SEPARATOR_OPTIONS } from "../viz/format";
+import { MAP_REGIONS } from "../viz/options/geo-sankey";
 import { seriesColor, MB_COLORS } from "../viz/options/constants";
 
 const SWATCHES = ["#509EE3", "#88BF4D", "#A989C5", "#EF8C8C", "#F9D45C", "#F2A86F", "#98D9D9", "#7172AD"];
@@ -572,8 +573,8 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
   if (vizId === "map") {
     return (
       <Stack gap="md">
-        <Select label="Carte par région" size="sm" data={[{ value: "world", label: "Monde (pays)" }]} value={settings.mapRegion} onChange={(v) => v && onChange({ mapRegion: v as any })} allowDeselect={false} comboboxProps={{ withinPortal: true }} />
-        <FieldSelect label="Champ de région" value={settings.locationField} data={allCols} onPick={(v: string) => v && onChange({ locationField: v })} />
+        <Select label="Carte par région" size="sm" data={MAP_REGIONS.map((r) => ({ value: r.value, label: r.label }))} value={settings.mapRegion} onChange={(v) => v && onChange({ mapRegion: v as any })} allowDeselect={false} comboboxProps={{ withinPortal: true }} />
+        <FieldSelect label="Champ de région" value={settings.locationField} data={allCols} onPick={(v: string) => v && onChange({ locationField: v })} placeholder="Nom, code INSEE…" />
         <FieldSelect label="Champ de métrique" value={settings.metrics?.[0]} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
         <AggSelect settings={settings} onChange={onChange} />
       </Stack>

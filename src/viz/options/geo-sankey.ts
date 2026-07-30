@@ -2,16 +2,26 @@ import * as echarts from "echarts";
 import type { EChartsOption } from "echarts";
 import type { Column, Dataset } from "../../data/types";
 import { getDimensions, getMetrics } from "../../data/types";
-import type { VizSettings } from "../settings";
+import type { Aggregation, MapRegion, VizSettings } from "../settings";
 import { findColumn } from "../settings";
-import worldJson from "../../data/world.json";
+import { nf2 } from "../format";
 import { ACCENT_COLORS, FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 
-const nf = (v: number) => Intl.NumberFormat("fr-FR").format(v);
+const nf = (v: number) => nf2(v);
 
 function twoDimensions(dataset: Dataset): [Column | undefined, Column | undefined] {
   const dims = getDimensions(dataset);
   return [dims[0], dims[1] ?? dims[0]];
+}
+
+function reduceWith(vals: number[], agg: Aggregation): number {
+  if (agg === "count") return vals.length;
+  if (agg === "distinct") return new Set(vals).size;
+  if (vals.length === 0) return 0;
+  if (agg === "mean") return vals.reduce((s, v) => s + v, 0) / vals.length;
+  if (agg === "min") return Math.min(...vals);
+  if (agg === "max") return Math.max(...vals);
+  return vals.reduce((s, v) => s + v, 0);
 }
 
 // ---------------------------------------------------------------- Sankey ----
@@ -19,14 +29,14 @@ function twoDimensions(dataset: Dataset): [Column | undefined, Column | undefine
 export function buildSankeyOption(dataset: Dataset, settings: VizSettings): EChartsOption {
   const [autoSrc, autoTgt] = twoDimensions(dataset);
   const source = findColumn(dataset, settings.sourceField) ?? autoSrc;
-  const target = findColumn(dataset, settings.targetField) ?? (settings.breakout ? findColumn(dataset, settings.breakout) : undefined) ?? autoTgt;
+  const target =
+    findColumn(dataset, settings.targetField) ?? (settings.breakout ? findColumn(dataset, settings.breakout) : undefined) ?? autoTgt;
   const metric = findColumn(dataset, settings.metrics?.[0]) ?? getMetrics(dataset)[0];
 
   if (!source || !target || source.index === target.index) {
     return emptyMessage("Le Sankey nécessite deux colonnes de catégories distinctes (source et cible).");
   }
 
-  // Aggregate flows by (source → target).
   const linkMap = new Map<string, { s: string; t: string; v: number }>();
   const nodeSet = new Set<string>();
   for (const r of dataset.rows) {
@@ -53,7 +63,10 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
       backgroundColor: MB_COLORS.white,
       borderColor: MB_COLORS.border,
       textStyle: { color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12 },
-      formatter: (p: any) => (p.dataType === "edge" ? `${p.data.source.replace("▸ ", "")} → ${p.data.target.replace(" ◂", "")}: ${nf(p.data.value)}` : p.name.replace(/▸ | ◂/g, "")),
+      formatter: (p: any) =>
+        p.dataType === "edge"
+          ? `${p.data.source.replace("▸ ", "")} → ${p.data.target.replace(" ◂", "")}: ${nf(p.data.value)}`
+          : String(p.name).replace(/▸ | ◂/g, ""),
     },
     series: [
       {
@@ -77,57 +90,75 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
 
 // ------------------------------------------------------------------- Map ----
 
-let mapRegistered = false;
-function ensureWorld() {
-  if (!mapRegistered) {
-    echarts.registerMap("world", worldJson as any);
-    mapRegistered = true;
-  }
+/** The Grand Lyon WFS layers bundled with the app (see src/data/geo). */
+export const MAP_REGIONS: { value: MapRegion; label: string; nameProp: string; codeProps: string[] }[] = [
+  { value: "communes", label: "Communes de la Métropole de Lyon", nameProp: "nom", codeProps: ["insee", "trigramme"] },
+  { value: "directions", label: "Directions territoriales", nameProp: "nom", codeProps: [] },
+  { value: "ctm", label: "Conférences territoriales (CTM)", nameProp: "nom", codeProps: ["code"] },
+];
+
+type GeoJson = { features: { properties: Record<string, unknown> }[] };
+const loaded = new Map<MapRegion, GeoJson>();
+
+/** Lazily import + register a layer with ECharts; returns null until ready. */
+async function loadRegion(region: MapRegion): Promise<GeoJson> {
+  const cached = loaded.get(region);
+  if (cached) return cached;
+  const mod =
+    region === "communes"
+      ? await import("../../data/geo/communes.json")
+      : region === "directions"
+        ? await import("../../data/geo/directions.json")
+        : await import("../../data/geo/ctm.json");
+  const geo = (mod as { default: GeoJson }).default;
+  echarts.registerMap(region, geo as never);
+  loaded.set(region, geo);
+  return geo;
 }
 
-// Build an ISO-A2 → country NAME lookup from the bundled GeoJSON.
-const ISO_TO_NAME: Record<string, string> = {};
-for (const f of (worldJson as any).features) {
-  const iso = f.properties?.ISO_A2;
-  const name = f.properties?.NAME;
-  if (iso && name) ISO_TO_NAME[String(iso).toUpperCase()] = name;
-}
-
-function toCountryName(value: unknown): string {
-  const s = String(value ?? "").trim();
-  if (s.length === 2 && ISO_TO_NAME[s.toUpperCase()]) return ISO_TO_NAME[s.toUpperCase()];
-  return s;
+/** Kick off loading so the chart can be rebuilt once the layer is available. */
+export function ensureRegion(region: MapRegion, onReady: () => void): boolean {
+  if (loaded.has(region)) return true;
+  loadRegion(region).then(onReady).catch(() => undefined);
+  return false;
 }
 
 export function buildMapOption(dataset: Dataset, settings: VizSettings): EChartsOption {
-  ensureWorld();
+  const region = settings.mapRegion;
+  const geo = loaded.get(region);
+  if (!geo) return emptyMessage("Chargement du fond de carte…");
+
+  const cfg = MAP_REGIONS.find((r) => r.value === region)!;
   const dims = getDimensions(dataset);
   const location = findColumn(dataset, settings.locationField) ?? dims[0];
   const metric = findColumn(dataset, settings.metrics?.[0]) ?? getMetrics(dataset)[0];
 
   if (!location) {
-    return emptyMessage("La carte nécessite une colonne de localisation (nom de pays ou code ISO à 2 lettres).");
+    return emptyMessage("La carte nécessite une colonne de localisation (nom de commune, code INSEE…).");
   }
 
-  // Aggregate metric by country using the chosen aggregation.
+  // Build a lookup from every known identifier (name, INSEE, code…) to the
+  // layer's canonical feature name, so users can join on whichever they have.
+  const toName = new Map<string, string>();
+  for (const f of geo.features) {
+    const name = String(f.properties[cfg.nameProp] ?? "");
+    if (!name) continue;
+    toName.set(norm(name), name);
+    for (const p of cfg.codeProps) {
+      const v = f.properties[p];
+      if (v != null) toName.set(norm(String(v)), name);
+    }
+  }
+
   const buckets = new Map<string, number[]>();
   for (const r of dataset.rows) {
-    const name = toCountryName(r[location.index]);
+    const raw = String(r[location.index] ?? "");
+    const name = toName.get(norm(raw)) ?? raw;
     const v = metric ? Number(r[metric.index]) : 1;
     if (!buckets.has(name)) buckets.set(name, []);
     buckets.get(name)!.push(isNaN(v) ? 0 : v);
   }
-  const agg = settings.aggregation;
-  const reduce = (vals: number[]): number => {
-    if (agg === "count") return vals.length;
-    if (agg === "distinct") return new Set(vals).size;
-    if (vals.length === 0) return 0;
-    if (agg === "mean") return vals.reduce((s, v) => s + v, 0) / vals.length;
-    if (agg === "min") return Math.min(...vals);
-    if (agg === "max") return Math.max(...vals);
-    return vals.reduce((s, v) => s + v, 0);
-  };
-  const data = [...buckets.entries()].map(([name, vals]) => ({ name, value: reduce(vals) }));
+  const data = [...buckets.entries()].map(([name, vals]) => ({ name, value: reduceWith(vals, settings.aggregation) }));
   const max = Math.max(1, ...data.map((d) => d.value));
 
   return {
@@ -150,16 +181,26 @@ export function buildMapOption(dataset: Dataset, settings: VizSettings): ECharts
     series: [
       {
         type: "map",
-        map: "world",
-        nameProperty: "NAME",
+        map: region,
+        nameProperty: cfg.nameProp,
         roam: true,
-        emphasis: { label: { show: false }, itemStyle: { areaColor: ACCENT_COLORS[4] } },
+        emphasis: { label: { show: true, fontFamily: FONT_FAMILY, fontSize: 11 }, itemStyle: { areaColor: ACCENT_COLORS[4] } },
         itemStyle: { areaColor: MB_COLORS.bgLight, borderColor: MB_COLORS.border },
         data,
       },
     ],
     textStyle: { fontFamily: FONT_FAMILY },
   };
+}
+
+/** Loose matching: case/accent/punctuation-insensitive. */
+function norm(s: string): string {
+  return s
+    .trim()
+    .toLowerCase()
+    .normalize("NFD")
+    .replace(/[\u0300-\u036f]/g, "")
+    .replace(/[^a-z0-9]/g, "");
 }
 
 function emptyMessage(text: string): EChartsOption {
