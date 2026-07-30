@@ -87,9 +87,24 @@ function timeAxis(timestamps: number[], settings: VizSettings, name?: string) {
   };
 }
 
-function tooltipCfg(): EChartsOption["tooltip"] {
+function tooltipCfg(extra?: { names: string[]; rows: string[][] }): EChartsOption["tooltip"] {
   return {
     trigger: "axis",
+    // "Colonnes d'infobulle supplémentaires": appended under the series lines.
+    formatter: extra
+      ? (params: any) => {
+          const list = Array.isArray(params) ? params : [params];
+          const idx = list[0]?.dataIndex ?? 0;
+          const head = `<div style="font-weight:700;margin-bottom:4px">${list[0]?.axisValueLabel ?? ""}</div>`;
+          const series = list
+            .map((p: any) => `<div>${p.marker} ${p.seriesName}: <b>${nf(Array.isArray(p.value) ? Number(p.value[1]) : Number(p.value))}</b></div>`)
+            .join("");
+          const rows = extra.names
+            .map((n, i) => `<div style="color:#949AAB">${n}: ${extra.rows[idx]?.[i] ?? ""}</div>`)
+            .join("");
+          return head + series + (rows ? `<div style="margin-top:4px;border-top:1px solid #EEECEC;padding-top:4px">${rows}</div>` : "");
+        }
+      : undefined,
     axisPointer: { type: "line", lineStyle: { color: MB_COLORS.border, width: 1 } },
     backgroundColor: MB_COLORS.white,
     borderColor: MB_COLORS.border,
@@ -260,9 +275,21 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
   const leftAxis = valueAxis(settings, frame.series.length === 1 ? frame.series[0].name : undefined, normalized);
   const yAxis = anyRight ? [leftAxis, { ...valueAxis(settings, undefined, normalized), position: "right" as const }] : leftAxis;
 
+  // Extra tooltip columns, resolved once per category (first matching row).
+  const tipCols = settings.tooltipColumns.map((n) => dataset.cols.find((c) => c.name === n)).filter((c): c is NonNullable<typeof c> => !!c);
+  const tipExtra = tipCols.length
+    ? {
+        names: tipCols.map((c) => c.display_name),
+        rows: frame.categories.map((cat) => {
+          const row = dataset.rows.find((r) => String(r[frame.dimension.index]) === String(cat));
+          return tipCols.map((c) => (row ? String(row[c.index] ?? "") : ""));
+        }),
+      }
+    : undefined;
+
   return {
     grid: { ...baseGrid(), top: frame.series.length >= 2 && settings.showLegend ? 36 : 24 },
-    tooltip: tooltipCfg(),
+    tooltip: tooltipCfg(tipExtra),
     legend: legendCfg(frame, settings),
     xAxis: isDate ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name) : categoryAxis(frame.categories, settings, frame.dimension.display_name),
     yAxis,

@@ -94,7 +94,9 @@ const MAX_RECOMMENDED = 12;
 
 // Loose geo detection: a text column whose name looks like a place, matching
 // Metabase's isCountry/isState/lat-long checks in spirit.
-const GEO_NAME = /(pays|country|state|region|région|commune|ville|city|département|departement|insee|territoire|ctm|zone)/i;
+// Geo detection is scoped to the bundled Grand Lyon layers: a "Pays" column
+// has no matching map here, so it should drive a bar chart, not a map.
+const GEO_NAME = /(commune|arrondissement|insee|territoire|\bctm\b|quartier|ville)/i;
 function hasGeoColumn(cols: Column[]): boolean {
   return cols.some((c) => c.base_type === "string" && GEO_NAME.test(c.name + " " + c.display_name));
 }

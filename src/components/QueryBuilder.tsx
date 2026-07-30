@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Box, Group, Text } from "@mantine/core";
+import { Box, Button, Group, Text } from "@mantine/core";
 import type * as echarts from "echarts";
 import type { Dataset } from "../data/types";
 import type { VizId } from "../viz/registry";
-import { VIZ_BY_ID, defaultVizFor } from "../viz/registry";
+import { VIZ_BY_ID } from "../viz/registry";
+import { defaultDisplay, maybeResetDisplay } from "../viz/auto-display";
 import type { VizSettings } from "../viz/settings";
 import { defaultSettings } from "../viz/settings";
 import { exportPng } from "../data/export";
@@ -35,7 +36,9 @@ export function QueryBuilder({
   const [summarizeOpen, setSummarizeOpen] = useState(false);
   const dataset = useMemo(() => applyQuery(rawDataset, filters, summarize), [rawDataset, filters, summarize]);
 
-  const [selected, setSelected] = useState<VizId>(() => defaultVizFor(dataset));
+  const [selected, setSelected] = useState<VizId>(() => defaultDisplay(dataset, null));
+  // Set when the user picks a chart by hand (Metabase's displayIsLocked).
+  const [displayLocked, setDisplayLocked] = useState(false);
   // Like Metabase: after a query runs you land on the table with the
   // visualization picker collapsed; you open it via the "Visualisation" button.
   const [sidebar, setSidebar] = useState<SidebarMode>("closed");
@@ -52,11 +55,19 @@ export function QueryBuilder({
   useEffect(() => {
     setFilters([]);
     setSummarize({ aggregations: [], breakouts: [] });
+    setDisplayLocked(false);
   }, [rawDataset]);
 
+  // After every query change, re-pick the display the way Metabase does.
   useEffect(() => {
     setSettings(defaultSettings(dataset));
-    setSelected(defaultVizFor(dataset));
+    setSelected((current) => {
+      const next = maybeResetDisplay({ current, dataset, summarize, locked: displayLocked });
+      if (!next.locked && displayLocked) setDisplayLocked(false);
+      if (next.display !== "table") setMode("chart");
+      return next.display;
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [dataset]);
 
   const patchSettings = (patch: Partial<VizSettings>) => setSettings((s) => ({ ...s, ...patch }));
@@ -91,6 +102,10 @@ export function QueryBuilder({
           >
             Importer un autre CSV
           </button>
+          {/* Placeholder for now: clickable, but saving is not wired up yet. */}
+          <Button variant="subtle" size="xs" color="brand" onClick={() => undefined}>
+            Sauvegarder
+          </Button>
         </Group>
       </Group>
 
@@ -103,6 +118,7 @@ export function QueryBuilder({
             onSelect={(id) => {
               // The picker highlights the current display; picking "Table"
               // returns to table mode, any other type switches to chart mode.
+              setDisplayLocked(true);
               if (id === "table") {
                 setMode("table");
               } else {

@@ -14,9 +14,21 @@ export type CurrencyPlacement = "header" | "cell";
 export type SeparatorStyle = "comma-dot" | "space-comma" | "dot-comma" | "none-dot" | "apos-dot";
 export type PieLabelDisplay = "auto" | "on" | "off";
 export type PieValueFormat = "percent" | "value" | "both";
-export type MapRegion = "communes" | "directions" | "ctm";
+export type MapRegion = "communes" | "communes-arr" | "directions" | "ctm";
 export type FunnelDisplay = "funnel" | "bar";
 export type QuartileStyle = "box" | "line";
+export type ConditionOp = ">" | ">=" | "<" | "<=" | "=" | "!=";
+
+/** One "Couleurs conditionnelles" rule (Nombre / Table). */
+export interface ColorRule {
+  /** Column the rule tests; empty means "the displayed value". */
+  column?: string;
+  operator: ConditionOp;
+  value: number;
+  color: string;
+  /** Table only: colour the whole row rather than the cell. */
+  wholeRow?: boolean;
+}
 
 export interface GaugeRange {
   color: string;
@@ -176,6 +188,12 @@ export interface VizSettings {
   treemapShowParentLabels: boolean;
   treemapShowParentValues: boolean;
 
+  // --- conditional colours (scalar / table) ---
+  colorRules: ColorRule[];
+
+  // --- tooltip ---
+  tooltipColumns: string[]; // "Colonnes d'infobulle supplémentaires"
+
   // --- smartscalar ---
   comparisons: ComparisonType[];
 
@@ -238,6 +256,8 @@ export function defaultSettings(dataset: Dataset): VizSettings {
     treemapShowLeafValues: false,
     treemapShowParentLabels: true,
     treemapShowParentValues: false,
+    colorRules: [],
+    tooltipColumns: [],
     comparisons: ["previous"],
     mapRegion: "communes",
   };

@@ -79,8 +79,8 @@ export function ChartCanvas({
     color: MB_COLORS.textPrimary,
   } as const;
 
-  if (vizId === "table") return <div style={wrap}><DataTable dataset={dataset} /></div>;
-  if (vizId === "object") return <div style={wrap}><DataTable dataset={dataset} detail /></div>;
+  if (vizId === "table") return <div style={wrap}><DataTable dataset={dataset} settings={settings} /></div>;
+  if (vizId === "object") return <div style={wrap}><DataTable dataset={dataset} detail settings={settings} /></div>;
   if (vizId === "pivot") return <div style={wrap}><PivotTableView dataset={dataset} settings={settings} /></div>;
   if (vizId === "scalar") {
     const m = resolveShape(dataset, settings).metrics[0];

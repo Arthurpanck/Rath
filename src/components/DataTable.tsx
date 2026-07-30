@@ -1,11 +1,12 @@
 import { Table } from "@mantine/core";
 import type { Dataset } from "../data/types";
-import { nf2 } from "../viz/format";
+import { matchColorRule, nf2 } from "../viz/format";
+import type { VizSettings } from "../viz/settings";
 import { MB_COLORS } from "../viz/options/constants";
 
 const nf = (v: unknown) => (typeof v === "number" ? nf2(v) : String(v ?? ""));
 
-export function DataTable({ dataset, detail = false }: { dataset: Dataset; detail?: boolean }) {
+export function DataTable({ dataset, detail = false, settings }: { dataset: Dataset; detail?: boolean; settings?: VizSettings }) {
   if (detail) {
     // "Visualisation détaillée": show the first row as key/value pairs.
     const row = dataset.rows[0] ?? [];
@@ -52,8 +53,17 @@ export function DataTable({ dataset, detail = false }: { dataset: Dataset; detai
           </Table.Tr>
         </Table.Thead>
         <Table.Tbody>
-          {dataset.rows.map((row, i) => (
-            <Table.Tr key={i}>
+          {dataset.rows.map((row, i) => {
+            // "Couleurs conditionnelles": a rule can tint one cell or the row.
+            const rules = settings?.colorRules ?? [];
+            const rowRule = rules.find((r) => {
+              if (!r.wholeRow) return false;
+              const c = dataset.cols.find((x) => x.name === r.column) ?? dataset.cols.find((x) => x.base_type === "number");
+              if (!c) return false;
+              return matchColorRule(Number(row[c.index]), [r]) != null;
+            });
+            return (
+            <Table.Tr key={i} style={rowRule ? { background: rowRule.color + "22" } : undefined}>
               <Table.Td style={{ textAlign: "center", padding: "6px 12px", borderBottom: `1px solid ${MB_COLORS.tableRowBorder}` }}>
                 <span
                   style={{
@@ -71,10 +81,13 @@ export function DataTable({ dataset, detail = false }: { dataset: Dataset; detai
                   {i + 1}
                 </span>
               </Table.Td>
-              {dataset.cols.map((c) => (
+              {dataset.cols.map((c) => {
+                const cellRule = rules.find((r) => !r.wholeRow && r.column === c.name && matchColorRule(Number(row[c.index]), [r]) != null);
+                return (
                 <Table.Td
                   key={c.name}
                   style={{
+                    background: cellRule ? cellRule.color + "33" : undefined,
                     color: MB_COLORS.textPrimary,
                     textAlign: c.base_type === "number" ? "right" : "left",
                     padding: "8px 16px",
@@ -84,9 +97,11 @@ export function DataTable({ dataset, detail = false }: { dataset: Dataset; detai
                 >
                   {nf(row[c.index])}
                 </Table.Td>
-              ))}
+                );
+              })}
             </Table.Tr>
-          ))}
+            );
+          })}
         </Table.Tbody>
       </Table>
     </div>

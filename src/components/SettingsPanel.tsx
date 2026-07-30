@@ -6,6 +6,7 @@ import {
   Button,
   Group,
   Menu,
+  MultiSelect,
   NumberInput,
   Popover,
   Radio,
@@ -30,7 +31,6 @@ import { getDimensions, isMetric } from "../data/types";
 import type { VizId } from "../viz/registry";
 import { VIZ_BY_ID } from "../viz/registry";
 import type {
-  Aggregation,
   AxisPosition,
   ComparisonType,
   CurrencyPlacement,
@@ -46,6 +46,8 @@ import type {
   PieLabelDisplay,
   PieValueFormat,
   PiePercent,
+  ColorRule,
+  ConditionOp,
   FunnelDisplay,
   QuartileStyle,
   SeparatorStyle,
@@ -64,14 +66,6 @@ import { seriesColor, MB_COLORS } from "../viz/options/constants";
 
 const SWATCHES = ["#509EE3", "#88BF4D", "#A989C5", "#EF8C8C", "#F9D45C", "#F2A86F", "#98D9D9", "#7172AD"];
 
-const AGG_OPTIONS: { value: Aggregation; label: string }[] = [
-  { value: "sum", label: "Somme" },
-  { value: "mean", label: "Moyenne" },
-  { value: "count", label: "Nombre (count)" },
-  { value: "distinct", label: "Valeurs distinctes" },
-  { value: "min", label: "Minimum" },
-  { value: "max", label: "Maximum" },
-];
 const SORT_OPTIONS: { value: SortOrder; label: string }[] = [
   { value: "none", label: "Ordre des données" },
   { value: "dim-asc", label: "Dimension ↑" },
@@ -98,13 +92,13 @@ const TABS: Record<string, string[]> = {
   funnel: ["Données", "Affichage"],
   smartscalar: ["Données", "Affichage"],
   progress: ["Données", "Mise en forme"],
-  scalar: ["Mise en forme"],
+  scalar: ["Mise en forme", "Couleurs"],
   gauge: ["Données", "Plages", "Mise en forme"],
   sankey: ["Données"],
   map: ["Données"],
   pivot: ["Données"],
   treemap: ["Données", "Affichage"],
-  table: ["Données"],
+  table: ["Couleurs"],
   object: ["Données"],
 };
 
@@ -164,12 +158,6 @@ function Seg<T extends string>({ label, value, onChange, data }: { label: string
   );
 }
 
-function AggSelect({ settings, onChange }: { settings: VizSettings; onChange: (p: Partial<VizSettings>) => void }) {
-  return (
-    <Select label="Agrégation" data={AGG_OPTIONS} value={settings.aggregation} onChange={(v) => v && onChange({ aggregation: v as Aggregation })} allowDeselect={false} comboboxProps={{ withinPortal: true }} size="sm" />
-  );
-}
-
 // ============================================================ main panel ====
 
 export function SettingsPanel({
@@ -217,10 +205,11 @@ export function SettingsPanel({
             {tab === "Données" && (
               <DonneesTab vizId={vizId} settings={settings} onChange={onChange} allCols={allCols} dimOptions={dimOptions} metricOptions={metricOptions} activeMetrics={activeMetrics} />
             )}
-            {tab === "Affichage" && <AffichageTab vizId={vizId} settings={settings} onChange={onChange} isCartesian={isCartesian} />}
+            {tab === "Affichage" && <AffichageTab vizId={vizId} settings={settings} onChange={onChange} isCartesian={isCartesian} allCols={allCols} />}
             {tab === "Axes" && <AxesTab settings={settings} onChange={onChange} />}
             {tab === "Mise en forme" && <FormatTab vizId={vizId} settings={settings} onChange={onChange} allCols={allCols} />}
             {tab === "Plages" && <RangesTab settings={settings} onChange={onChange} />}
+            {tab === "Couleurs" && <ConditionalColorsTab vizId={vizId} settings={settings} onChange={onChange} allCols={allCols} />}
           </Box>
         </ScrollArea>
       </Tabs>
@@ -490,7 +479,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
         <FieldSelect label="Dimension" value={settings.dimension} data={allCols} onPick={(v: string) => v && onChange({ dimension: v })} />
         <FieldSelect label="Anneau intérieur" value={settings.innerRing} data={dimOptions} onPick={(v: string) => onChange({ innerRing: v ?? undefined })} clearable placeholder="(optionnel)" />
         <FieldSelect label="Anneau extérieur" value={settings.outerRing} data={dimOptions} onPick={(v: string) => onChange({ outerRing: v ?? undefined })} clearable placeholder="(optionnel)" />
-        <AggSelect settings={settings} onChange={onChange} />
         <Select label="Tri" data={SORT_OPTIONS} value={settings.sort} onChange={(v) => v && onChange({ sort: v as SortOrder })} allowDeselect={false} comboboxProps={{ withinPortal: true }} size="sm" />
       </Stack>
     );
@@ -500,7 +488,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
       <Stack gap="md">
         <FieldSelect label="Colonne avec les étapes" value={settings.dimension} data={allCols} onPick={(v: string) => v && onChange({ dimension: v })} />
         <FieldSelect label="Mesure" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
       </Stack>
     );
   }
@@ -510,7 +497,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
     return (
       <Stack gap="md">
         <FieldSelect label="Nombre principal" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
         <Stack gap={6}>
           <Label>Comparaisons</Label>
           {comparisons.map((c, i) => (
@@ -548,7 +534,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
     return (
       <Stack gap="md">
         <FieldSelect label="Nombre principal" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
         <NumberInput label={vizId === "progress" ? "Objectif" : "Objectif (optionnel)"} placeholder="auto" size="sm" hideControls value={settings.goalValue ?? undefined} onChange={(v) => onChange({ goalValue: v === "" || v == null ? null : Number(v) })} />
       </Stack>
     );
@@ -559,7 +544,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
         <FieldSelect label="Source" value={settings.sourceField} data={dimOptions} onPick={(v: string) => v && onChange({ sourceField: v })} />
         <FieldSelect label="Destination" value={settings.targetField} data={dimOptions} onPick={(v: string) => v && onChange({ targetField: v })} />
         <FieldSelect label="Mesure" value={settings.metrics?.[0]} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
       </Stack>
     );
   }
@@ -569,7 +553,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
         <FieldSelect label="Lignes" value={settings.rowField} data={dimOptions} onPick={(v: string) => v && onChange({ rowField: v })} />
         <FieldSelect label="Colonnes" value={settings.colField} data={dimOptions} onPick={(v: string) => v && onChange({ colField: v })} />
         <FieldSelect label="Mesure" value={settings.metrics?.[0]} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
       </Stack>
     );
   }
@@ -579,7 +562,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
         <Select label="Carte par région" size="sm" data={MAP_REGIONS.map((r) => ({ value: r.value, label: r.label }))} value={settings.mapRegion} onChange={(v) => v && onChange({ mapRegion: v as any })} allowDeselect={false} comboboxProps={{ withinPortal: true }} />
         <FieldSelect label="Champ de région" value={settings.locationField} data={allCols} onPick={(v: string) => v && onChange({ locationField: v })} placeholder="Nom, code INSEE…" />
         <FieldSelect label="Champ de métrique" value={settings.metrics?.[0]} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
       </Stack>
     );
   }
@@ -599,7 +581,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
       <Stack gap="md">
         <FieldSelect label="Axe X (dimension)" value={settings.dimension} data={allCols} onPick={(v: string) => v && onChange({ dimension: v })} />
         <FieldSelect label="Mesure" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
         <Select label="Tri" data={SORT_OPTIONS} value={settings.sort} onChange={(v) => v && onChange({ sort: v as SortOrder })} allowDeselect={false} comboboxProps={{ withinPortal: true }} size="sm" />
       </Stack>
     );
@@ -610,7 +591,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
         <FieldSelect label="Dimension" value={settings.dimension} data={dimOptions} onPick={(v: string) => v && onChange({ dimension: v })} />
         <FieldSelect label="Grouping (2ᵉ niveau)" value={settings.breakout} data={dimOptions.filter((o: any) => o.value !== settings.dimension)} onPick={(v: string) => onChange({ breakout: v ?? undefined })} clearable placeholder="(optionnel)" />
         <FieldSelect label="Mesure" value={settings.metrics?.[0] ?? activeMetrics[0]?.name} data={metricOptions} onPick={(v: string) => v && onChange({ metrics: [v] })} />
-        <AggSelect settings={settings} onChange={onChange} />
       </Stack>
     );
   }
@@ -636,7 +616,6 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
           size="sm"
         />
       )}
-      <AggSelect settings={settings} onChange={onChange} />
       <Select label="Tri" data={SORT_OPTIONS} value={settings.sort} onChange={(v) => v && onChange({ sort: v as SortOrder })} allowDeselect={false} comboboxProps={{ withinPortal: true }} size="sm" />
     </Stack>
   );
@@ -644,7 +623,8 @@ function DonneesTab({ vizId, settings, onChange, allCols, dimOptions, metricOpti
 
 // ============================================================== Affichage ====
 
-function AffichageTab({ vizId, settings, onChange, isCartesian }: any) {
+function AffichageTab({ vizId, settings, onChange, isCartesian, allCols }: any) {
+  const tooltipOptions = (allCols ?? []).filter((o: any) => o.value !== settings.dimension);
   return (
     <Stack gap="md">
       {/* Empilement: available for every cartesian chart, including Courbe. */}
@@ -676,6 +656,19 @@ function AffichageTab({ vizId, settings, onChange, isCartesian }: any) {
 
       {["bar", "line", "area", "combo"].includes(vizId) && (
         <Switch size="sm" checked={settings.showTrendline} label="Courbe de tendance" onChange={(e) => onChange({ showTrendline: e.currentTarget.checked })} />
+      )}
+
+      {isCartesian && tooltipOptions.length > 0 && (
+        <MultiSelect
+          label="Colonnes d'infobulle supplémentaires"
+          placeholder="aucune"
+          data={tooltipOptions}
+          value={settings.tooltipColumns}
+          onChange={(v) => onChange({ tooltipColumns: v })}
+          comboboxProps={{ withinPortal: true }}
+          size="sm"
+          clearable
+        />
       )}
 
       {["bar", "line", "area", "combo", "row", "pie", "funnel"].includes(vizId) && (
@@ -856,6 +849,59 @@ function FormatTab({ vizId, settings, onChange, allCols }: any) {
       <NumberInput label="Multiplier par un nombre" size="sm" placeholder="1" hideControls value={fmt.multiplyBy ?? undefined} onChange={(v) => patch({ multiplyBy: v === "" || v == null ? null : Number(v) })} />
       <TextInput label="Ajouter un préfixe" size="sm" value={fmt.prefix ?? ""} onChange={(e) => patch({ prefix: e.currentTarget.value })} />
       <TextInput label="Ajouter un suffixe" size="sm" value={fmt.suffix ?? ""} onChange={(e) => patch({ suffix: e.currentTarget.value })} />
+    </Stack>
+  );
+}
+
+// =================================================== Couleurs conditionnelles ====
+
+const COND_OPS: { value: ConditionOp; label: string }[] = [
+  { value: ">", label: "Supérieur à" },
+  { value: ">=", label: "Supérieur ou égal à" },
+  { value: "<", label: "Inférieur à" },
+  { value: "<=", label: "Inférieur ou égal à" },
+  { value: "=", label: "Égal à" },
+  { value: "!=", label: "Différent de" },
+];
+
+function ConditionalColorsTab({ vizId, settings, onChange, allCols }: any) {
+  const rules: ColorRule[] = settings.colorRules ?? [];
+  const update = (i: number, p: Partial<ColorRule>) => onChange({ colorRules: rules.map((r, j) => (j === i ? { ...r, ...p } : r)) });
+  const remove = (i: number) => onChange({ colorRules: rules.filter((_, j) => j !== i) });
+  const add = () => onChange({ colorRules: [...rules, { column: allCols[0]?.value, operator: ">", value: 0, color: SWATCHES[3] }] });
+
+  return (
+    <Stack gap="md">
+      <Text fz="xs" style={{ color: MB_COLORS.textTertiary }}>
+        Colorez {vizId === "table" ? "les cellules ou les lignes" : "la valeur"} selon une condition.
+      </Text>
+
+      {rules.map((r, i) => (
+        <Stack key={i} gap={6} style={{ border: `1px solid ${MB_COLORS.border}`, borderRadius: 8, padding: 10 }}>
+          <Group justify="space-between">
+            <Text fz="xs" fw={700} style={{ color: MB_COLORS.textTertiary }}>Règle {i + 1}</Text>
+            <ActionIcon size="sm" variant="subtle" color="gray" aria-label="Supprimer la règle" onClick={() => remove(i)}>
+              <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+            </ActionIcon>
+          </Group>
+          <Select size="xs" label="Colonne" data={allCols} value={r.column ?? null} onChange={(v) => v && update(i, { column: v })} allowDeselect={false} comboboxProps={{ withinPortal: true }} />
+          <Group grow gap="xs">
+            <Select size="xs" label="Condition" data={COND_OPS} value={r.operator} onChange={(v) => v && update(i, { operator: v as ConditionOp })} allowDeselect={false} comboboxProps={{ withinPortal: true }} />
+            <NumberInput size="xs" label="Valeur" hideControls value={r.value} onChange={(v) => update(i, { value: Number(v) || 0 })} />
+          </Group>
+          <Group gap={10} wrap="nowrap" mt={4}>
+            <ColorDot value={r.color} onChange={(v) => update(i, { color: v })} />
+            <Text fz="sm" style={{ flex: 1, color: MB_COLORS.textPrimary }}>Couleur</Text>
+          </Group>
+          {vizId === "table" && (
+            <Switch size="sm" checked={!!r.wholeRow} label="Colorer toute la ligne" onChange={(e) => update(i, { wholeRow: e.currentTarget.checked })} />
+          )}
+        </Stack>
+      ))}
+
+      <Anchor component="button" type="button" fz="sm" fw={700} style={{ color: MB_COLORS.brand, alignSelf: "flex-start" }} onClick={add}>
+        Ajouter une règle
+      </Anchor>
     </Stack>
   );
 }

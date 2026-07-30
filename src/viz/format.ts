@@ -88,3 +88,19 @@ export const CURRENCIES: { value: string; label: string }[] = [
   { value: "JPY", label: "Yen japonais (¥)" },
   { value: "CNY", label: "Yuan chinois" },
 ];
+
+/** First matching conditional-colour rule for a value, if any. */
+export function matchColorRule(value: number, rules: { operator: string; value: number; color: string }[]): string | undefined {
+  for (const r of rules) {
+    const v = Number(r.value);
+    const ok =
+      r.operator === ">" ? value > v
+      : r.operator === ">=" ? value >= v
+      : r.operator === "<" ? value < v
+      : r.operator === "<=" ? value <= v
+      : r.operator === "=" ? value === v
+      : value !== v;
+    if (ok) return r.color;
+  }
+  return undefined;
+}

@@ -3,16 +3,17 @@ import type { Column, Dataset } from "../data/types";
 import { analyzeShape } from "../data/types";
 import type { VizSettings } from "../viz/settings";
 import { findColumn, resolveShape } from "../viz/settings";
-import { formatNumber } from "../viz/format";
+import { formatNumber, matchColorRule } from "../viz/format";
 import { MB_COLORS } from "../viz/options/constants";
 
 export function ScalarView({ dataset, settings, column }: { dataset: Dataset; settings: VizSettings; column?: Column }) {
   const metric = findColumn(dataset, settings.scalarField) ?? column ?? analyzeShape(dataset).metrics[0];
   const raw = metric ? Number(dataset.rows[0]?.[metric.index]) : NaN;
   const value = isNaN(raw) ? "—" : formatNumber(raw, settings.numberFormat);
+  const ruleColor = isNaN(raw) ? undefined : matchColorRule(raw, settings.colorRules);
   return (
     <div style={{ textAlign: "center" }}>
-      <Text fw={700} style={{ fontSize: 64, lineHeight: 1.05, color: MB_COLORS.textPrimary }}>
+      <Text fw={700} style={{ fontSize: 64, lineHeight: 1.05, color: ruleColor ?? MB_COLORS.textPrimary }}>
         {value}
       </Text>
       {metric && (

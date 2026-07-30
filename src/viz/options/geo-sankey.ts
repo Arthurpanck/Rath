@@ -93,6 +93,7 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
 /** The Grand Lyon WFS layers bundled with the app (see src/data/geo). */
 export const MAP_REGIONS: { value: MapRegion; label: string; nameProp: string; codeProps: string[] }[] = [
   { value: "communes", label: "Communes de la Métropole de Lyon", nameProp: "nom", codeProps: ["insee", "trigramme"] },
+  { value: "communes-arr", label: "Communes + arrondissements de Lyon", nameProp: "nom", codeProps: ["insee", "trigramme"] },
   { value: "directions", label: "Directions territoriales", nameProp: "nom", codeProps: [] },
   { value: "ctm", label: "Conférences territoriales (CTM)", nameProp: "nom", codeProps: ["code"] },
 ];
@@ -107,9 +108,11 @@ async function loadRegion(region: MapRegion): Promise<GeoJson> {
   const mod =
     region === "communes"
       ? await import("../../data/geo/communes.json")
-      : region === "directions"
-        ? await import("../../data/geo/directions.json")
-        : await import("../../data/geo/ctm.json");
+      : region === "communes-arr"
+        ? await import("../../data/geo/communes-arrondissements.json")
+        : region === "directions"
+          ? await import("../../data/geo/directions.json")
+          : await import("../../data/geo/ctm.json");
   const geo = (mod as { default: GeoJson }).default;
   echarts.registerMap(region, geo as never);
   loaded.set(region, geo);
