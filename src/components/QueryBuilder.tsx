@@ -7,6 +7,10 @@ import { VIZ_BY_ID, defaultVizFor } from "../viz/registry";
 import type { VizSettings } from "../viz/settings";
 import { defaultSettings } from "../viz/settings";
 import { exportPng } from "../data/export";
+import type { Filter, Summarize } from "../data/query";
+import { applyQuery } from "../data/query";
+import { FilterButton } from "./FilterPopover";
+import { SummarizeButton, SummarizeSidebar } from "./SummarizeSidebar";
 import { VizPickerSidebar } from "./VizPickerSidebar";
 import { SettingsPanel } from "./SettingsPanel";
 import { ChartCanvas } from "./ChartCanvas";
@@ -16,7 +20,7 @@ import { MB_COLORS } from "../viz/options/constants";
 type SidebarMode = "closed" | "picker" | "settings";
 
 export function QueryBuilder({
-  dataset,
+  dataset: rawDataset,
   datasetName,
   onReset,
 }: {
@@ -25,6 +29,12 @@ export function QueryBuilder({
   onReset: () => void;
 }) {
   // Metabase-style recommendation decides the chart we open with.
+  // Query stage: "Filtrer" then "Résumer", exactly like a Metabase question.
+  const [filters, setFilters] = useState<Filter[]>([]);
+  const [summarize, setSummarize] = useState<Summarize>({ aggregations: [], breakouts: [] });
+  const [summarizeOpen, setSummarizeOpen] = useState(false);
+  const dataset = useMemo(() => applyQuery(rawDataset, filters, summarize), [rawDataset, filters, summarize]);
+
   const [selected, setSelected] = useState<VizId>(() => defaultVizFor(dataset));
   // Like Metabase: after a query runs you land on the table with the
   // visualization picker collapsed; you open it via the "Visualisation" button.
@@ -39,6 +49,11 @@ export function QueryBuilder({
   };
 
   // Reset settings whenever a new dataset is loaded.
+  useEffect(() => {
+    setFilters([]);
+    setSummarize({ aggregations: [], breakouts: [] });
+  }, [rawDataset]);
+
   useEffect(() => {
     setSettings(defaultSettings(dataset));
     setSelected(defaultVizFor(dataset));
@@ -68,6 +83,8 @@ export function QueryBuilder({
           </Text>
         </Group>
         <Group gap="xs">
+          <FilterButton dataset={rawDataset} filters={filters} onChange={setFilters} />
+          <SummarizeButton active={summarizeOpen || summarize.aggregations.length > 0} onClick={() => setSummarizeOpen((o) => !o)} />
           <button
             onClick={onReset}
             style={{ border: `1px solid ${MB_COLORS.border}`, background: MB_COLORS.white, color: MB_COLORS.textSecondary, borderRadius: 8, padding: "6px 12px", cursor: "pointer", fontSize: 13, fontWeight: 600 }}
@@ -157,6 +174,10 @@ export function QueryBuilder({
             canExportImage={mode === "chart" && !["table", "object", "scalar", "smartscalar", "pivot"].includes(effectiveViz)}
           />
         </Box>
+
+        {summarizeOpen && (
+          <SummarizeSidebar dataset={rawDataset} summarize={summarize} onChange={setSummarize} onDone={() => setSummarizeOpen(false)} />
+        )}
       </Box>
     </Box>
   );
