@@ -76,3 +76,37 @@ src/
     options/           générateurs d'options ECharts (params dérivés de Metabase)
   components/  écran d'import, sélecteur, canvas, barre inférieure, layout
 ```
+
+## Captures de référence
+
+`captures/` contient une image par déclinaison de graphique (avec / sans valeurs,
+avec / sans légende, empilé, 100 %, formats de nombres…), rangée par type, avec un
+`README.md` qui décrit chaque PNG — voir [`captures/README.md`](captures/README.md).
+
+Elles sont produites par l'application elle-même : `shot.html` monte le composant
+`ChartCanvas` seul (même pipeline de données, mêmes options ECharts, sans la barre
+d'outils ni le panneau de réglages), le jeu de données et les réglages passent par
+l'URL, et Playwright capture le cadre du graphique.
+
+```bash
+npm run dev              # sert l'application et /shot.html
+node scripts/shots.mjs   # régénère toutes les captures
+```
+
+Le catalogue des variations est dans `scripts/catalogue.mjs` ;
+`SHOT_ONLY=06-camembert` ne régénère qu'un dossier.
+
+## Kit PowerPoint de prototypage
+
+`presentation/Kit-prototypage-tableau-de-bord.pptx` reprend les captures dans un
+support de travail : quatre gabarits de page où déposer les graphiques, une annexe
+qui montre les 109 déclinaisons, et — dans la zone Commentaires de chaque
+diapositive — une fiche à remplir (titre, mesure, axes, filtres, format…). La
+personne compose son tableau de bord dans PowerPoint et le rend spécifié.
+
+```bash
+node scripts/deck.mjs   # régénère le .pptx depuis captures/ et scripts/catalogue.mjs
+```
+
+Le catalogue des variations (`scripts/catalogue.mjs`) est partagé par le générateur
+de captures et par celui du diaporama : un libellé n'est écrit qu'une fois.
