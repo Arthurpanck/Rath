@@ -247,6 +247,14 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
 
   const rowTotals = frame.categories.map((_, ci) => frame.series.reduce((s, se) => s + (se.values[ci] ?? 0), 0));
 
+  // ECharts 6 hides line symbols unless `showSymbol` is set explicitly, which
+  // also swallows the data labels attached to them. Metabase draws the points
+  // and only drops them once they crowd each other, so "Auto" reproduces that:
+  // symbols stay visible as long as they are at least three widths apart.
+  const plotWidth = size ? Math.max(size.width - 80, 1) : Infinity;
+  const pointSpacing = plotWidth / Math.max(frame.categories.length - 1, 1);
+  const autoSymbols = pointSpacing >= CHART_STYLE.symbolSize * 3;
+
   const BAR_WIDTH: Record<string, number> = { xs: 0.35, normal: 0.8, wide: 0.95, xl: 1 };
   const LINE_WIDTH: Record<string, number> = { S: 1.5, M: 2, L: 3.5 };
   const baseDisp = (i: number): "line" | "bar" | "area" => (kind === "combo" ? (i > 0 ? "line" : "bar") : isArea ? "area" : isLine ? "line" : "bar");
@@ -267,7 +275,7 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       return isDate ? ([frame.timestamps![ci], v] as [number, number]) : (v as number);
     });
     const areaOpacity = o.areaOpacity === "opaque" ? 0.9 : o.areaOpacity === "transparent" ? 0.12 : CHART_STYLE.opacity.area;
-    const showSym = o.markers === "on" ? true : o.markers === "off" ? false : undefined;
+    const showSym = o.markers === "on" ? true : o.markers === "off" ? false : autoSymbols;
     return {
       name: o.name ?? s.name,
       type: asLine ? "line" : "bar",
@@ -290,8 +298,9 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
         itemStyle: asLine ? undefined : { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)", shadowOffsetY: 1 },
       },
       blur: { itemStyle: { opacity: 0.9 } },
-      // Stacked segments label inside; otherwise above the mark.
-      label: dataLabel(settings, normalized, stacked ? "inside" : "top", o),
+      // Stacked bar segments label inside; lines and areas keep their label
+      // above the point, where "inside" would leave it invisible.
+      label: dataLabel(settings, normalized, stacked && !asLine ? "inside" : "top", o),
       markLine: i === 0 ? goalMarkLine(settings) : undefined,
     } as SeriesOption;
   });
@@ -379,20 +388,26 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
 }
 
 function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
+  const normalized = settings.stacking === "normalized";
   const stacked = settings.stacking !== "none";
+  // Like the vertical family: "100 %" turns every bar into its share of the
+  // category total, and the value axis becomes a percentage scale.
+  const rowTotals = frame.categories.map((_, ci) => frame.series.reduce((s, se) => s + (se.values[ci] ?? 0), 0));
+
   const series: SeriesOption[] = frame.series.map((s, i) => {
     const o = settings.series[s.key] ?? {};
+    const values = s.values.map((v, ci) => (v == null ? null : normalized ? (rowTotals[ci] ? (v / rowTotals[ci]) * 100 : 0) : v));
     return {
       name: o.name ?? s.name,
       type: "bar",
       xAxisIndex: 0,
-      data: s.values as (number | null)[],
+      data: values as (number | null)[],
       stack: stacked ? "stack" : undefined,
       itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
       barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
       emphasis: { focus: "none" as const, itemStyle: { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)" } },
       blur: { itemStyle: { opacity: 0.9 } },
-      label: dataLabel(settings, false, stacked ? "inside" : "right", o),
+      label: dataLabel(settings, normalized, stacked ? "inside" : "right", o),
     } as SeriesOption;
   });
   return {
@@ -400,7 +415,7 @@ function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
     tooltip: tooltipCfg(),
     legend: legendCfg(frame, settings),
     yAxis: { ...categoryAxis(frame.categories, settings), inverse: true },
-    xAxis: valueAxis(settings),
+    xAxis: valueAxis(settings, undefined, normalized),
     series,
     textStyle: { fontFamily: FONT_FAMILY },
   };

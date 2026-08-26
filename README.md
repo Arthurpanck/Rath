@@ -76,3 +76,22 @@ src/
     options/           générateurs d'options ECharts (params dérivés de Metabase)
   components/  écran d'import, sélecteur, canvas, barre inférieure, layout
 ```
+
+## Captures de référence
+
+`captures/` contient une image par déclinaison de graphique (avec / sans valeurs,
+avec / sans légende, empilé, 100 %, formats de nombres…), rangée par type, avec un
+`README.md` qui décrit chaque PNG — voir [`captures/README.md`](captures/README.md).
+
+Elles sont produites par l'application elle-même : `shot.html` monte le composant
+`ChartCanvas` seul (même pipeline de données, mêmes options ECharts, sans la barre
+d'outils ni le panneau de réglages), le jeu de données et les réglages passent par
+l'URL, et Playwright capture le cadre du graphique.
+
+```bash
+npm run dev              # sert l'application et /shot.html
+node scripts/shots.mjs   # régénère toutes les captures
+```
+
+Le catalogue des variations est en tête de `scripts/shots.mjs` ;
+`SHOT_ONLY=06-camembert` ne régénère qu'un dossier.
