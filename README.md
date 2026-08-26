@@ -93,5 +93,20 @@ npm run dev              # sert l'application et /shot.html
 node scripts/shots.mjs   # régénère toutes les captures
 ```
 
-Le catalogue des variations est en tête de `scripts/shots.mjs` ;
+Le catalogue des variations est dans `scripts/catalogue.mjs` ;
 `SHOT_ONLY=06-camembert` ne régénère qu'un dossier.
+
+## Kit PowerPoint de prototypage
+
+`presentation/Kit-prototypage-tableau-de-bord.pptx` reprend les captures dans un
+support de travail : quatre gabarits de page où déposer les graphiques, une annexe
+qui montre les 109 déclinaisons, et — dans la zone Commentaires de chaque
+diapositive — une fiche à remplir (titre, mesure, axes, filtres, format…). La
+personne compose son tableau de bord dans PowerPoint et le rend spécifié.
+
+```bash
+node scripts/deck.mjs   # régénère le .pptx depuis captures/ et scripts/catalogue.mjs
+```
+
+Le catalogue des variations (`scripts/catalogue.mjs`) est partagé par le générateur
+de captures et par celui du diaporama : un libellé n'est écrit qu'une fois.
