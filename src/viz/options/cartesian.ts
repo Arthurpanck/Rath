@@ -76,14 +76,14 @@ export interface ChartSize {
   height: number;
 }
 
-interface XTickLayout {
+export interface XTickLayout {
   show: boolean;
   rotate: number;
   /** Height the labels need, so the grid can leave room for them. */
   height: number;
 }
 
-function xTickLayout(categories: Cell[], size: ChartSize | undefined): XTickLayout {
+export function xTickLayout(categories: Cell[], size: ChartSize | undefined): XTickLayout {
   const horizontal: XTickLayout = { show: true, rotate: 0, height: AXIS_FONT_SIZE };
   if (!size || categories.length === 0) return horizontal;
 

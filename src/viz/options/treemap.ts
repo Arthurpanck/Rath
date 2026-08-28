@@ -359,6 +359,64 @@ export function drillTreemapOption(option: EChartsOption, groupId: string): ECha
  * Returns a signature of the decisions so the caller can skip re-rendering when
  * nothing changed — without that guard, re-rendering would loop forever.
  */
+/** The rectangle a tile got from the layout pass. */
+export interface TileRect {
+  width: number;
+  height: number;
+}
+
+/**
+ * How much of a leaf's label fits in the tile it was given — Metabase's
+ * two-pass labelling: lay the treemap out first, then decide per tile whether
+ * there is room for the name, the value and the share, for the name alone, or
+ * for nothing at all.
+ *
+ * Kept pure and separate from the ECharts plumbing so the thresholds ported
+ * from Metabase (labels.ts) can be tested directly, as they are upstream.
+ */
+export function leafLabelDetail(
+  rect: TileRect,
+  valueLabel?: string,
+): { detail: LabelDetail; innerWidth: number } {
+  const innerWidth = Math.max(0, rect.width - LABEL_PADDING * 2);
+  const fitsLabel = rect.width >= MIN_LABEL_TILE_WIDTH && rect.height >= MIN_LABEL_TILE_HEIGHT;
+  const valueWidth = valueLabel
+    ? measureText(valueLabel, LEAF_BLOCK.value.fontSize, LEAF_BLOCK.value.fontWeight)
+    : 0;
+  const fitsFull = fitsLabel && rect.height >= MIN_FULL_LABEL_TILE_HEIGHT && innerWidth >= valueWidth;
+  return { detail: fitsFull ? "full" : fitsLabel ? "labelOnly" : "none", innerWidth };
+}
+
+/**
+ * What a group header can show: the name gets a fixed column so the value and
+ * its share sit flush right, and the header is dropped entirely when even
+ * PARENT_MIN_HEADER_VISIBLE_CHARS characters of the name would not fit.
+ */
+export function groupHeaderDetail(
+  rect: TileRect,
+  name: string,
+  valueLabel?: string,
+  percentLabel?: string,
+): { showText: boolean; showValuePercent: boolean; available: number; nameColumnWidth: number } {
+  const available = rect.width - GROUP_HEADER.paddingX * 2;
+  const measureHeader = (t: string, w: number) => measureText(t, GROUP_HEADER.fontSize, w);
+  const showText =
+    measureHeader(name.slice(0, PARENT_MIN_HEADER_VISIBLE_CHARS), GROUP_HEADER.fontWeight) <= available;
+  const cluster = valueLabel
+    ? measureHeader(valueLabel, GROUP_HEADER.fontWeight) +
+      GROUP_HEADER.valuePercentGap +
+      measureHeader(percentLabel ?? "", GROUP_HEADER.percentFontWeight)
+    : Infinity;
+  const fullName = measureHeader(name, GROUP_HEADER.fontWeight);
+  const showValuePercent = showText && fullName + PARENT_HEADER_VALUE_PERCENT_GAP + cluster <= available;
+  return {
+    showText,
+    showValuePercent,
+    available,
+    nameColumnWidth: available - PARENT_HEADER_VALUE_PERCENT_GAP - cluster,
+  };
+}
+
 export function applyTreemapLabels(chart: echarts.ECharts, option: EChartsOption): string | null {
   const nodes = getLayoutNodes(chart);
   if (nodes.length === 0) return null;
@@ -377,13 +435,7 @@ export function applyTreemapLabels(chart: echarts.ECharts, option: EChartsOption
       node.label = { show: false };
       return;
     }
-    const innerWidth = Math.max(0, rect.width - LABEL_PADDING * 2);
-    const fitsLabel = rect.width >= MIN_LABEL_TILE_WIDTH && rect.height >= MIN_LABEL_TILE_HEIGHT;
-    const valueWidth = p.valueLabel
-      ? measureText(p.valueLabel, LEAF_BLOCK.value.fontSize, LEAF_BLOCK.value.fontWeight)
-      : 0;
-    const fitsFull = fitsLabel && rect.height >= MIN_FULL_LABEL_TILE_HEIGHT && innerWidth >= valueWidth;
-    const detail: LabelDetail = fitsFull ? "full" : fitsLabel ? "labelOnly" : "none";
+    const { detail, innerWidth } = leafLabelDetail(rect, p.valueLabel);
     parts.push(`${node.id}:${detail}:${Math.round(innerWidth)}`);
 
     if (detail === "none") {
@@ -423,18 +475,15 @@ export function applyTreemapLabels(chart: echarts.ECharts, option: EChartsOption
     const p: NodePayload | undefined = node.mbPayload;
     const rect = layout.get(node.id);
     if (!p || !rect) continue;
-    const available = rect.width - GROUP_HEADER.paddingX * 2;
-    const measureHeader = (t: string, w: number) => measureText(t, GROUP_HEADER.fontSize, w);
-    const showText = measureHeader(p.name.slice(0, PARENT_MIN_HEADER_VISIBLE_CHARS), GROUP_HEADER.fontWeight) <= available;
-    const cluster = p.valueLabel
-      ? measureHeader(p.valueLabel, GROUP_HEADER.fontWeight) + GROUP_HEADER.valuePercentGap + measureHeader(p.percentLabel, GROUP_HEADER.percentFontWeight)
-      : Infinity;
-    const fullName = measureHeader(p.name, GROUP_HEADER.fontWeight);
-    const showValuePercent = showText && fullName + PARENT_HEADER_VALUE_PERCENT_GAP + cluster <= available;
+    const { showText, showValuePercent, available, nameColumnWidth } = groupHeaderDetail(
+      rect,
+      p.name,
+      p.valueLabel,
+      p.percentLabel,
+    );
     parts.push(`${node.id}:${showText ? (showValuePercent ? "hdr-full" : "hdr-name") : "hdr-none"}:${Math.round(available)}`);
 
     if (showValuePercent) {
-      const nameColumnWidth = available - PARENT_HEADER_VALUE_PERCENT_GAP - cluster;
       node.upperLabel = {
         backgroundColor: p.color,
         rich: richHeader(nameColumnWidth),

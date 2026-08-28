@@ -34,6 +34,39 @@ function categoryValuePairs(dataset: Dataset, settings: VizSettings): { name: st
   }));
 }
 
+/** The measurements a pie derives from the space it was given. */
+export interface PieGeometry {
+  /** The square the pie is drawn in, once side padding is taken off. */
+  innerSide: number;
+  outerRadius: number;
+  /** Zero unless the pie is a donut. */
+  innerRadius: number;
+  sliceBorderWidth: number;
+  sliceFontSize: number;
+}
+
+/**
+ * Pie sizing, transferred from Metabase's getRadiusOption / getBorderWidth and
+ * their slice font-size rule: nothing here is a fixed pixel value, every
+ * measurement scales with the room the chart actually has.
+ *
+ * Pure, so the ratios taken from Metabase's pie/constants.ts can be tested
+ * without an ECharts instance.
+ */
+export function pieGeometry(sideLength: number | undefined, numRings: number, donut: boolean): PieGeometry {
+  const innerSide = Math.min((sideLength ?? PIE.maxSideLength) - PIE.paddingSide * 2, PIE.maxSideLength);
+  const outerRadius = Math.max(innerSide / 2, 1);
+  const innerRadius = donut
+    ? outerRadius * (numRings === 2 ? PIE.twoRingInnerRadiusRatio : PIE.innerRadiusRatio)
+    : 0;
+  const sliceBorderWidth = numRings === 1 ? (Math.PI * innerSide) / PIE.borderProportion : 1;
+  const sliceFontSize =
+    numRings > 1
+      ? PIE.multiRingFontSize
+      : Math.max(PIE.maxFontSize * (innerSide / PIE.maxSideLength), PIE.minFontSize);
+  return { innerSide, outerRadius, innerRadius, sliceBorderWidth, sliceFontSize };
+}
+
 export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLength?: number): EChartsOption {
   // "Anneau intérieur", when set, drives the main ring's grouping.
   const effective = settings.innerRing ? { ...settings, dimension: settings.innerRing } : settings;
@@ -45,16 +78,12 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLeng
   const percentInLegend = settings.pieShowPercent === "legend" || settings.pieShowPercent === "both";
   const pct = (v: number) => (total ? Math.round((v / total) * 100) : 0);
 
-  // Sizing (Metabase's getRadiusOption / getBorderWidth / font-size rule).
   const numRings = settings.outerRing ? 2 : 1;
-  const innerSide = Math.min((sideLength ?? PIE.maxSideLength) - PIE.paddingSide * 2, PIE.maxSideLength);
-  const outerRadius = Math.max(innerSide / 2, 1);
-  const innerRadius = donut ? outerRadius * (numRings === 2 ? PIE.twoRingInnerRadiusRatio : PIE.innerRadiusRatio) : 0;
-  const sliceBorderWidth = numRings === 1 ? (Math.PI * innerSide) / PIE.borderProportion : 1;
-  const sliceFontSize =
-    numRings > 1
-      ? PIE.multiRingFontSize
-      : Math.max(PIE.maxFontSize * (innerSide / PIE.maxSideLength), PIE.minFontSize);
+  const { outerRadius, innerRadius, sliceBorderWidth, sliceFontSize } = pieGeometry(
+    sideLength,
+    numRings,
+    donut,
+  );
 
   // The centre total drops to a smaller size, then loses its label, then
   // disappears, as the hole gets too narrow for the text.
