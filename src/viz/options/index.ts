@@ -2,6 +2,23 @@ import type { EChartsOption } from "echarts";
 import type { Dataset } from "../../data/types";
 import type { VizId } from "../registry";
 import type { VizSettings } from "../settings";
+import {
+  AGGREGATION_VIZ,
+  AXIS_VIZ,
+  CARTESIAN_VIZ,
+  COLOR_VIZ,
+  DATA_LABEL_VIZ,
+  DIMENSION_VIZ,
+  GOAL_VIZ,
+  LEGEND_VIZ,
+  MULTI_METRIC_VIZ,
+  NO_METRIC_VIZ,
+  SORTABLE_VIZ,
+  STACKING_VIZ,
+  TREND_LINE_VIZ,
+  Y_RANGE_VIZ,
+  Y_SCALE_VIZ,
+} from "../families";
 import { buildCartesianOption } from "./cartesian";
 import { buildBoxplotOption, buildGaugeOption, buildPieOption, buildProgressOption } from "./other";
 import { buildTreemapOption } from "./treemap";
@@ -76,24 +93,23 @@ export interface Capabilities {
 
 /** Which settings controls are relevant for a given viz (drives the settings panel). */
 export function settingsCapabilities(id: VizId): Capabilities {
-  const cartesian = ["bar", "line", "area", "combo", "row"].includes(id);
   return {
-    dimension: ["bar", "line", "area", "combo", "row", "pie", "waterfall"].includes(id),
-    metrics: !["object", "sankey", "map"].includes(id),
-    multiMetric: ["bar", "line", "area", "combo", "row", "scatter", "boxplot"].includes(id),
-    breakout: cartesian,
-    aggregation: [...["bar", "line", "area", "combo", "row", "pie", "waterfall"], "pivot"].includes(id),
-    sort: ["bar", "line", "area", "combo", "row", "pie"].includes(id),
-    stacking: ["bar", "area", "row"].includes(id),
-    values: cartesian || id === "waterfall",
-    legend: ["bar", "line", "area", "combo", "row", "pie"].includes(id),
-    colors: ["bar", "line", "area", "combo", "row", "progress"].includes(id),
-    axisTitles: cartesian || id === "waterfall" || id === "scatter",
-    goal: ["bar", "line", "area", "combo", "gauge", "progress"].includes(id),
-    trendline: ["bar", "line", "area", "combo"].includes(id),
-    yScale: cartesian || id === "scatter",
-    yRange: cartesian || id === "scatter" || id === "waterfall",
-    axisToggles: cartesian || id === "waterfall" || id === "scatter",
+    dimension: DIMENSION_VIZ.includes(id),
+    metrics: !NO_METRIC_VIZ.includes(id),
+    multiMetric: MULTI_METRIC_VIZ.includes(id),
+    breakout: CARTESIAN_VIZ.includes(id),
+    aggregation: AGGREGATION_VIZ.includes(id),
+    sort: SORTABLE_VIZ.includes(id),
+    stacking: STACKING_VIZ.includes(id),
+    values: DATA_LABEL_VIZ.includes(id),
+    legend: LEGEND_VIZ.includes(id),
+    colors: COLOR_VIZ.includes(id),
+    axisTitles: AXIS_VIZ.includes(id),
+    goal: GOAL_VIZ.includes(id),
+    trendline: TREND_LINE_VIZ.includes(id),
+    yScale: Y_SCALE_VIZ.includes(id),
+    yRange: Y_RANGE_VIZ.includes(id),
+    axisToggles: AXIS_VIZ.includes(id),
     pie: id === "pie",
     sankeyFields: id === "sankey",
     pivotFields: id === "pivot",

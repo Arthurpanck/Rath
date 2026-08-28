@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import * as echarts from "echarts";
 import type { Dataset } from "../data/types";
 import type { VizId } from "../viz/registry";
+import { CARTESIAN_LIKE_VIZ } from "../viz/families";
 import type { VizSettings } from "../viz/settings";
 import { resolveShape } from "../viz/settings";
 import { buildEChartsOption, isEChartsViz } from "../viz/options";
@@ -9,8 +10,6 @@ import { ensureRegion } from "../viz/options/geo-sankey";
 import { applyTreemapLabels, drillTreemapOption } from "../viz/options/treemap";
 import { MB_COLORS } from "../viz/options/constants";
 
-// Charts whose option depends on the container size and must be rebuilt on resize.
-const CARTESIAN_VIZ = ["bar", "line", "area", "combo", "row", "scatter", "waterfall", "boxplot"];
 import { ScalarView, TrendView } from "./ScalarViews";
 import { DataTable } from "./DataTable";
 import { PivotTableView } from "./PivotTableView";
@@ -75,8 +74,9 @@ function EChart({
     setDrilledGroup(null);
     chart.setOption(option, true);
 
+    // Charts whose option depends on the container size must be rebuilt on resize.
     rebuildRef.current =
-      vizId === "pie" || CARTESIAN_VIZ.includes(vizId)
+      vizId === "pie" || CARTESIAN_LIKE_VIZ.includes(vizId)
         ? () => {
             const next = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
             optionRef.current = next;
