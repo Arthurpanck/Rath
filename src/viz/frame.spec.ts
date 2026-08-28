@@ -38,7 +38,7 @@ const settings = (patch: Partial<VizSettings> = {}): VizSettings => ({
 
 const values = (d: Dataset, s: VizSettings) => buildFrame(d, s).series[0].values;
 /** Last element — the project targets ES2020, which has no Array.prototype.at. */
-const last = <T,>(xs: T[]): T => xs[xs.length - 1];
+const last = <T>(xs: T[]): T => xs[xs.length - 1];
 
 describe("buildFrame grouping", () => {
   it("collapses rows sharing a dimension value into one category", () => {
@@ -99,12 +99,24 @@ describe("buildFrame aggregation", () => {
     });
 
     it("lets a blank drag the mean down", () => {
-      const blanked: Dataset = { ...dataset, rows: [["Lyon", "web", 10], ["Lyon", "web", null]] };
+      const blanked: Dataset = {
+        ...dataset,
+        rows: [
+          ["Lyon", "web", 10],
+          ["Lyon", "web", null],
+        ],
+      };
       expect(values(blanked, settings({ aggregation: "mean" }))).toEqual([5]);
     });
 
     it("lets a blank become the minimum", () => {
-      const blanked: Dataset = { ...dataset, rows: [["Lyon", "web", 10], ["Lyon", "web", null]] };
+      const blanked: Dataset = {
+        ...dataset,
+        rows: [
+          ["Lyon", "web", 10],
+          ["Lyon", "web", null],
+        ],
+      };
       expect(values(blanked, settings({ aggregation: "min" }))).toEqual([0]);
     });
 
@@ -145,7 +157,10 @@ describe("buildFrame sorting", () => {
 
   it("keeps every series aligned with the reordered categories", () => {
     const twoMetrics: Dataset = {
-      cols: [...dataset.cols, { name: "marge", display_name: "Marge", base_type: "number", index: 3 }],
+      cols: [
+        ...dataset.cols,
+        { name: "marge", display_name: "Marge", base_type: "number", index: 3 },
+      ],
       rows: [
         ["Lyon", "web", 10, 1],
         ["Paris", "web", 5, 2],
@@ -173,7 +188,12 @@ describe("buildFrame sorting", () => {
         [100, 3],
       ],
     };
-    const s = { ...defaultSettings(numeric), dimension: "annee", metrics: ["n"], sort: "dim-asc" as const };
+    const s = {
+      ...defaultSettings(numeric),
+      dimension: "annee",
+      metrics: ["n"],
+      sort: "dim-asc" as const,
+    };
     expect(buildFrame(numeric, s).categories).toEqual([9, 100, 2021]);
   });
 });

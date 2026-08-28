@@ -15,7 +15,14 @@ import { FONT_FAMILY, MB_COLORS, seriesColor } from "./constants";
 import { measureText, truncateToWidth } from "./text";
 
 // --- style.ts -------------------------------------------------------------
-const GROUP_HEADER = { fontWeight: 700, fontSize: 12, height: 32, paddingX: 12, percentFontWeight: 400, valuePercentGap: 8 };
+const GROUP_HEADER = {
+  fontWeight: 700,
+  fontSize: 12,
+  height: 32,
+  paddingX: 12,
+  percentFontWeight: 400,
+  valuePercentGap: 8,
+};
 const LEAF_BLOCK = {
   name: { fontSize: 12, fontWeight: 700, height: 16 },
   value: { fontSize: 20, fontWeight: 700, height: 24 },
@@ -147,17 +154,61 @@ interface NodePayload {
 
 function richLeaf(color: string) {
   return {
-    name: { color, fontFamily: FONT_FAMILY, fontSize: LEAF_BLOCK.name.fontSize, fontWeight: LEAF_BLOCK.name.fontWeight, height: LEAF_BLOCK.name.height, verticalAlign: "middle" as const },
-    value: { color, fontFamily: FONT_FAMILY, fontSize: LEAF_BLOCK.value.fontSize, fontWeight: LEAF_BLOCK.value.fontWeight, height: LEAF_BLOCK.value.height, padding: [LEAF_BLOCK.valueGap, 0, 0, 0], verticalAlign: "middle" as const },
-    pct: { color, fontFamily: FONT_FAMILY, fontSize: LEAF_BLOCK.percent.fontSize, fontWeight: LEAF_BLOCK.percent.fontWeight, height: LEAF_BLOCK.percent.height, lineHeight: LEAF_BLOCK.percent.height, padding: [LEAF_BLOCK.percentGap, 0, 0, 0], verticalAlign: "middle" as const },
+    name: {
+      color,
+      fontFamily: FONT_FAMILY,
+      fontSize: LEAF_BLOCK.name.fontSize,
+      fontWeight: LEAF_BLOCK.name.fontWeight,
+      height: LEAF_BLOCK.name.height,
+      verticalAlign: "middle" as const,
+    },
+    value: {
+      color,
+      fontFamily: FONT_FAMILY,
+      fontSize: LEAF_BLOCK.value.fontSize,
+      fontWeight: LEAF_BLOCK.value.fontWeight,
+      height: LEAF_BLOCK.value.height,
+      padding: [LEAF_BLOCK.valueGap, 0, 0, 0],
+      verticalAlign: "middle" as const,
+    },
+    pct: {
+      color,
+      fontFamily: FONT_FAMILY,
+      fontSize: LEAF_BLOCK.percent.fontSize,
+      fontWeight: LEAF_BLOCK.percent.fontWeight,
+      height: LEAF_BLOCK.percent.height,
+      lineHeight: LEAF_BLOCK.percent.height,
+      padding: [LEAF_BLOCK.percentGap, 0, 0, 0],
+      verticalAlign: "middle" as const,
+    },
   };
 }
 
 function richHeader(nameColumnWidth: number) {
   return {
-    name: { fontFamily: FONT_FAMILY, color: MB_COLORS.textPrimary, fontSize: GROUP_HEADER.fontSize, fontWeight: GROUP_HEADER.fontWeight, width: nameColumnWidth, overflow: "truncate" as const, align: "left" as const },
-    value: { fontFamily: FONT_FAMILY, color: MB_COLORS.textPrimary, fontSize: GROUP_HEADER.fontSize, fontWeight: GROUP_HEADER.fontWeight, padding: [0, 0, 0, PARENT_HEADER_VALUE_PERCENT_GAP] },
-    pct: { fontFamily: FONT_FAMILY, color: MB_COLORS.textSecondary, fontSize: GROUP_HEADER.fontSize, fontWeight: GROUP_HEADER.percentFontWeight, padding: [0, 0, 0, GROUP_HEADER.valuePercentGap] },
+    name: {
+      fontFamily: FONT_FAMILY,
+      color: MB_COLORS.textPrimary,
+      fontSize: GROUP_HEADER.fontSize,
+      fontWeight: GROUP_HEADER.fontWeight,
+      width: nameColumnWidth,
+      overflow: "truncate" as const,
+      align: "left" as const,
+    },
+    value: {
+      fontFamily: FONT_FAMILY,
+      color: MB_COLORS.textPrimary,
+      fontSize: GROUP_HEADER.fontSize,
+      fontWeight: GROUP_HEADER.fontWeight,
+      padding: [0, 0, 0, PARENT_HEADER_VALUE_PERCENT_GAP],
+    },
+    pct: {
+      fontFamily: FONT_FAMILY,
+      color: MB_COLORS.textSecondary,
+      fontSize: GROUP_HEADER.fontSize,
+      fontWeight: GROUP_HEADER.percentFontWeight,
+      padding: [0, 0, 0, GROUP_HEADER.valuePercentGap],
+    },
   };
 }
 
@@ -174,7 +225,8 @@ export function buildTreemapOption(dataset: Dataset, settings: VizSettings): ECh
   for (const r of dataset.rows) {
     const top = String(r[dimension.index] ?? "");
     const v = Number(r[metric.index]) || 0;
-    if (!roots.has(top)) roots.set(top, { name: top, value: 0, children: subgroup ? [] : undefined });
+    if (!roots.has(top))
+      roots.set(top, { name: top, value: 0, children: subgroup ? [] : undefined });
     const node = roots.get(top)!;
     node.value += v;
     if (subgroup) {
@@ -230,7 +282,10 @@ export function buildTreemapOption(dataset: Dataset, settings: VizSettings): ECh
       .sort((a, b) => b.value - a.value)
       .map((c, leafIndex) => {
         const norm = max === min ? 0.5 : (c.value - min) / (max - min);
-        const fill = withLightness(color, LEAF_LIGHTNESS_MIN + norm * (LEAF_LIGHTNESS_MAX - LEAF_LIGHTNESS_MIN));
+        const fill = withLightness(
+          color,
+          LEAF_LIGHTNESS_MIN + norm * (LEAF_LIGHTNESS_MAX - LEAF_LIGHTNESS_MIN),
+        );
         return leafOf(`${rootIndex}-${leafIndex}`, c.name, c.value, fill);
       });
 
@@ -260,7 +315,12 @@ export function buildTreemapOption(dataset: Dataset, settings: VizSettings): ECh
       textStyle: {
         rich: {
           l: { fontSize: 12, color: MB_COLORS.textTertiary, fontFamily: FONT_FAMILY },
-          v: { fontSize: 14, fontWeight: 700, color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
+          v: {
+            fontSize: 14,
+            fontWeight: 700,
+            color: MB_COLORS.textPrimary,
+            fontFamily: FONT_FAMILY,
+          },
         },
       },
     },
@@ -268,7 +328,8 @@ export function buildTreemapOption(dataset: Dataset, settings: VizSettings): ECh
       backgroundColor: MB_COLORS.white,
       borderColor: MB_COLORS.border,
       textStyle: { color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY, fontSize: 12 },
-      formatter: (p: any) => `${p.name}: ${fmt(p.value)}${showPercent ? ` (${pctOfTotal(p.value)})` : ""}`,
+      formatter: (p: any) =>
+        `${p.name}: ${fmt(p.value)}${showPercent ? ` (${pctOfTotal(p.value)})` : ""}`,
     },
     series: [
       {
@@ -297,7 +358,10 @@ export function buildTreemapOption(dataset: Dataset, settings: VizSettings): ECh
         },
         upperLabel: { show: false },
         levels: [
-          { itemStyle: { borderWidth: 0, gapWidth: 2, borderColor: "transparent" }, upperLabel: { show: false } },
+          {
+            itemStyle: { borderWidth: 0, gapWidth: 2, borderColor: "transparent" },
+            upperLabel: { show: false },
+          },
           {
             itemStyle: { borderWidth: 0, gapWidth: 1 },
             label: { show: false },
@@ -339,9 +403,10 @@ export function drillTreemapOption(option: EChartsOption, groupId: string): ECha
     label: { show: false },
     mbPayload: {
       ...c.mbPayload,
-      percentLabel: c.mbPayload?.percentLabel && parentValue
-        ? `${((Number(c.value) / parentValue) * 100).toFixed(2)}%`
-        : c.mbPayload?.percentLabel,
+      percentLabel:
+        c.mbPayload?.percentLabel && parentValue
+          ? `${((Number(c.value) / parentValue) * 100).toFixed(2)}%`
+          : c.mbPayload?.percentLabel,
     },
   }));
 
@@ -383,7 +448,8 @@ export function leafLabelDetail(
   const valueWidth = valueLabel
     ? measureText(valueLabel, LEAF_BLOCK.value.fontSize, LEAF_BLOCK.value.fontWeight)
     : 0;
-  const fitsFull = fitsLabel && rect.height >= MIN_FULL_LABEL_TILE_HEIGHT && innerWidth >= valueWidth;
+  const fitsFull =
+    fitsLabel && rect.height >= MIN_FULL_LABEL_TILE_HEIGHT && innerWidth >= valueWidth;
   return { detail: fitsFull ? "full" : fitsLabel ? "labelOnly" : "none", innerWidth };
 }
 
@@ -401,14 +467,16 @@ export function groupHeaderDetail(
   const available = rect.width - GROUP_HEADER.paddingX * 2;
   const measureHeader = (t: string, w: number) => measureText(t, GROUP_HEADER.fontSize, w);
   const showText =
-    measureHeader(name.slice(0, PARENT_MIN_HEADER_VISIBLE_CHARS), GROUP_HEADER.fontWeight) <= available;
+    measureHeader(name.slice(0, PARENT_MIN_HEADER_VISIBLE_CHARS), GROUP_HEADER.fontWeight) <=
+    available;
   const cluster = valueLabel
     ? measureHeader(valueLabel, GROUP_HEADER.fontWeight) +
       GROUP_HEADER.valuePercentGap +
       measureHeader(percentLabel ?? "", GROUP_HEADER.percentFontWeight)
     : Infinity;
   const fullName = measureHeader(name, GROUP_HEADER.fontWeight);
-  const showValuePercent = showText && fullName + PARENT_HEADER_VALUE_PERCENT_GAP + cluster <= available;
+  const showValuePercent =
+    showText && fullName + PARENT_HEADER_VALUE_PERCENT_GAP + cluster <= available;
   return {
     showText,
     showValuePercent,
@@ -443,10 +511,19 @@ export function applyTreemapLabels(chart: echarts.ECharts, option: EChartsOption
       return;
     }
     const color = textColorFor(p.color);
-    const name = truncateToWidth(p.name, innerWidth, LEAF_BLOCK.name.fontSize, LEAF_BLOCK.name.fontWeight);
+    const name = truncateToWidth(
+      p.name,
+      innerWidth,
+      LEAF_BLOCK.name.fontSize,
+      LEAF_BLOCK.name.fontWeight,
+    );
     const text =
       detail === "full"
-        ? [`{name|${sanitizeRich(name)}}`, p.valueLabel && `{value|${sanitizeRich(p.valueLabel)}}`, p.percentLabel && `{pct|${sanitizeRich(p.percentLabel)}}`]
+        ? [
+            `{name|${sanitizeRich(name)}}`,
+            p.valueLabel && `{value|${sanitizeRich(p.valueLabel)}}`,
+            p.percentLabel && `{pct|${sanitizeRich(p.percentLabel)}}`,
+          ]
             .filter(Boolean)
             .join("\n")
         : `{name|${sanitizeRich(name)}}`;
@@ -481,7 +558,9 @@ export function applyTreemapLabels(chart: echarts.ECharts, option: EChartsOption
       p.valueLabel,
       p.percentLabel,
     );
-    parts.push(`${node.id}:${showText ? (showValuePercent ? "hdr-full" : "hdr-name") : "hdr-none"}:${Math.round(available)}`);
+    parts.push(
+      `${node.id}:${showText ? (showValuePercent ? "hdr-full" : "hdr-name") : "hdr-none"}:${Math.round(available)}`,
+    );
 
     if (showValuePercent) {
       node.upperLabel = {
@@ -490,7 +569,11 @@ export function applyTreemapLabels(chart: echarts.ECharts, option: EChartsOption
         formatter: `{name|${sanitizeRich(p.name)}}{value|${sanitizeRich(p.valueLabel)}}{pct|${sanitizeRich(p.percentLabel)}}`,
       };
     } else {
-      node.upperLabel = { backgroundColor: p.color, color: showText ? undefined : "transparent", formatter: sanitizeRich(p.name) };
+      node.upperLabel = {
+        backgroundColor: p.color,
+        color: showText ? undefined : "transparent",
+        formatter: sanitizeRich(p.name),
+      };
     }
   }
 

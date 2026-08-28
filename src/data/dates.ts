@@ -24,7 +24,20 @@ export function pickGranularity(timestamps: number[]): DateGranularity {
   return "hour";
 }
 
-const MONTHS_FR = ["janv.", "févr.", "mars", "avr.", "mai", "juin", "juil.", "août", "sept.", "oct.", "nov.", "déc."];
+const MONTHS_FR = [
+  "janv.",
+  "févr.",
+  "mars",
+  "avr.",
+  "mai",
+  "juin",
+  "juil.",
+  "août",
+  "sept.",
+  "oct.",
+  "nov.",
+  "déc.",
+];
 
 export function formatDate(ts: number, g: DateGranularity): string {
   const d = new Date(ts);

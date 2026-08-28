@@ -47,7 +47,13 @@ export function ChartTypeOption({
             size="sm"
             variant="default"
             onClick={onOpenSettings}
-            styles={{ root: { backgroundColor: MB_COLORS.white, borderColor: MB_COLORS.border, color: MB_COLORS.textTertiary } }}
+            styles={{
+              root: {
+                backgroundColor: MB_COLORS.white,
+                borderColor: MB_COLORS.border,
+                color: MB_COLORS.textTertiary,
+              },
+            }}
             aria-label="Paramètres"
           >
             <Cog size={13} />
@@ -60,7 +66,11 @@ export function ChartTypeOption({
           fz="sm"
           lh={1.15}
           onClick={() => (selected ? onOpenSettings?.() : onSelect(viz.id))}
-          style={{ maxWidth: 92, cursor: "pointer", color: selected ? MB_COLORS.brand : MB_COLORS.textSecondary }}
+          style={{
+            maxWidth: 92,
+            cursor: "pointer",
+            color: selected ? MB_COLORS.brand : MB_COLORS.textSecondary,
+          }}
         >
           {viz.name}
         </Text>

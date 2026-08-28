@@ -68,7 +68,10 @@ function EChart({
     const chart = chartRef.current;
     if (!chart) return;
     chart.clear();
-    const option = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
+    const option = buildEChartsOption(vizId, dataset, settings, {
+      width: chart.getWidth(),
+      height: chart.getHeight(),
+    });
     optionRef.current = option;
     labelSigRef.current = null;
     setDrilledGroup(null);
@@ -78,7 +81,10 @@ function EChart({
     rebuildRef.current =
       vizId === "pie" || CARTESIAN_LIKE_VIZ.includes(vizId)
         ? () => {
-            const next = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
+            const next = buildEChartsOption(vizId, dataset, settings, {
+              width: chart.getWidth(),
+              height: chart.getHeight(),
+            });
             optionRef.current = next;
             chart.setOption(next, true);
           }
@@ -113,7 +119,10 @@ function EChart({
   const resetDrill = () => {
     const chart = chartRef.current;
     if (!chart) return;
-    const option = buildEChartsOption(vizId, dataset, settings, { width: chart.getWidth(), height: chart.getHeight() });
+    const option = buildEChartsOption(vizId, dataset, settings, {
+      width: chart.getWidth(),
+      height: chart.getHeight(),
+    });
     optionRef.current = option;
     labelSigRef.current = null;
     setDrilledGroup(null);
@@ -144,7 +153,13 @@ function EChart({
           }}
         >
           <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
-            <path d="M12 4L6 10l6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+            <path
+              d="M12 4L6 10l6 6"
+              stroke="currentColor"
+              strokeWidth="1.8"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            />
           </svg>
           Tout
           <span style={{ color: MB_COLORS.textTertiary, fontWeight: 400 }}>/ {drilledGroup}</span>
@@ -174,15 +189,44 @@ export function ChartCanvas({
     color: MB_COLORS.textPrimary,
   } as const;
 
-  if (vizId === "table") return <div style={wrap}><DataTable dataset={dataset} settings={settings} /></div>;
-  if (vizId === "object") return <div style={wrap}><DataTable dataset={dataset} detail settings={settings} /></div>;
-  if (vizId === "pivot") return <div style={wrap}><PivotTableView dataset={dataset} settings={settings} /></div>;
+  if (vizId === "table")
+    return (
+      <div style={wrap}>
+        <DataTable dataset={dataset} settings={settings} />
+      </div>
+    );
+  if (vizId === "object")
+    return (
+      <div style={wrap}>
+        <DataTable dataset={dataset} detail settings={settings} />
+      </div>
+    );
+  if (vizId === "pivot")
+    return (
+      <div style={wrap}>
+        <PivotTableView dataset={dataset} settings={settings} />
+      </div>
+    );
   if (vizId === "scalar") {
     const m = resolveShape(dataset, settings).metrics[0];
-    return <div style={wrap}><ScalarView dataset={dataset} settings={settings} column={m} /></div>;
+    return (
+      <div style={wrap}>
+        <ScalarView dataset={dataset} settings={settings} column={m} />
+      </div>
+    );
   }
-  if (vizId === "smartscalar") return <div style={wrap}><TrendView dataset={dataset} settings={settings} /></div>;
-  if (!isEChartsViz(vizId)) return <div style={wrap}><UnimplementedView vizId={vizId} /></div>;
+  if (vizId === "smartscalar")
+    return (
+      <div style={wrap}>
+        <TrendView dataset={dataset} settings={settings} />
+      </div>
+    );
+  if (!isEChartsViz(vizId))
+    return (
+      <div style={wrap}>
+        <UnimplementedView vizId={vizId} />
+      </div>
+    );
 
   return <EChart vizId={vizId} dataset={dataset} settings={settings} onChartReady={onChartReady} />;
 }

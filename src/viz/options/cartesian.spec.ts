@@ -63,14 +63,20 @@ describe("xTickLayout", () => {
   it("takes 45° at a slot just above the 2.1x threshold, not 90°", () => {
     // 30 categories over 890px is a 27px slot: above 12 * 2.1 = 25.2, and below
     // what a larger factor would demand.
-    const out = xTickLayout(Array.from({ length: 30 }, () => label(6)), { width: 890, height: 400 });
+    const out = xTickLayout(
+      Array.from({ length: 30 }, () => label(6)),
+      { width: 890, height: 400 },
+    );
     expect(out.rotate).toBe(45);
   });
 
   it("still takes 90° at a slot just above the 1.2x threshold, rather than hiding", () => {
     // 50 categories over 880px is a 16px slot: below the 45° threshold but
     // above 12 * 1.2 = 14.4.
-    const out = xTickLayout(Array.from({ length: 50 }, () => label(6)), { width: 880, height: 400 });
+    const out = xTickLayout(
+      Array.from({ length: 50 }, () => label(6)),
+      { width: 880, height: 400 },
+    );
     expect(out).toMatchObject({ show: true, rotate: 90 });
   });
 
@@ -78,14 +84,20 @@ describe("xTickLayout", () => {
     // 20 categories over 880px is a 40px slot; five-character labels are 36px.
     // They only overlap once the 6px gap is added (36 + 6 > 40), so a smaller
     // gap would leave them horizontal.
-    const out = xTickLayout(Array.from({ length: 20 }, () => label(5)), { width: 880, height: 400 });
+    const out = xTickLayout(
+      Array.from({ length: 20 }, () => label(5)),
+      { width: 880, height: 400 },
+    );
     expect(out.rotate).toBe(45);
   });
 
   it("still shows 90° labels taking just over half the height", () => {
     // 28-character labels are 201.6px; against a 400px chart that is 50% of the
     // height — under the 70% ceiling, over a stricter one.
-    const out = xTickLayout(Array.from({ length: 50 }, () => label(28)), { width: 880, height: 400 });
+    const out = xTickLayout(
+      Array.from({ length: 50 }, () => label(28)),
+      { width: 880, height: 400 },
+    );
     expect(out).toMatchObject({ show: true, rotate: 90 });
   });
 
@@ -118,7 +130,10 @@ describe("xTickLayout", () => {
   it("measures the widest label, not the first", () => {
     const cats = [label(2), label(2), label(30), label(2)];
     const wide = xTickLayout(cats, { width: 600, height: 600 });
-    const narrow = xTickLayout([label(2), label(2), label(2), label(2)], { width: 600, height: 600 });
+    const narrow = xTickLayout([label(2), label(2), label(2), label(2)], {
+      width: 600,
+      height: 600,
+    });
     expect(wide.height).toBeGreaterThan(narrow.height);
   });
 

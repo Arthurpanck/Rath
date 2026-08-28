@@ -12,7 +12,9 @@ export function UnimplementedView({ vizId }: { vizId: VizId }) {
         <VizIcon name={def.icon} size={48} />
       </div>
       <Text style={{ marginTop: 12, fontSize: 15 }}>« {def.name} »</Text>
-      <Text style={{ marginTop: 4, fontSize: 13 }}>Ce type de visualisation n'est pas encore pris en charge dans ce module.</Text>
+      <Text style={{ marginTop: 4, fontSize: 13 }}>
+        Ce type de visualisation n'est pas encore pris en charge dans ce module.
+      </Text>
     </div>
   );
 }

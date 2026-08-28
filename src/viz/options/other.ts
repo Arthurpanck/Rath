@@ -25,7 +25,10 @@ const PIE = {
   total: { valueFontSize: 22, valueFontSizeSm: 17, labelFontSize: 14, fontWeight: 700 },
 };
 
-function categoryValuePairs(dataset: Dataset, settings: VizSettings): { name: string; value: number }[] {
+function categoryValuePairs(
+  dataset: Dataset,
+  settings: VizSettings,
+): { name: string; value: number }[] {
   const frame = buildFrame(dataset, settings);
   const first = frame.series[0];
   return frame.categories.map((c, i) => ({
@@ -53,8 +56,15 @@ export interface PieGeometry {
  * Pure, so the ratios taken from Metabase's pie/constants.ts can be tested
  * without an ECharts instance.
  */
-export function pieGeometry(sideLength: number | undefined, numRings: number, donut: boolean): PieGeometry {
-  const innerSide = Math.min((sideLength ?? PIE.maxSideLength) - PIE.paddingSide * 2, PIE.maxSideLength);
+export function pieGeometry(
+  sideLength: number | undefined,
+  numRings: number,
+  donut: boolean,
+): PieGeometry {
+  const innerSide = Math.min(
+    (sideLength ?? PIE.maxSideLength) - PIE.paddingSide * 2,
+    PIE.maxSideLength,
+  );
   const outerRadius = Math.max(innerSide / 2, 1);
   const innerRadius = donut
     ? outerRadius * (numRings === 2 ? PIE.twoRingInnerRadiusRatio : PIE.innerRadiusRatio)
@@ -67,7 +77,11 @@ export function pieGeometry(sideLength: number | undefined, numRings: number, do
   return { innerSide, outerRadius, innerRadius, sliceBorderWidth, sliceFontSize };
 }
 
-export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLength?: number): EChartsOption {
+export function buildPieOption(
+  dataset: Dataset,
+  settings: VizSettings,
+  sideLength?: number,
+): EChartsOption {
   // "Anneau intérieur", when set, drives the main ring's grouping.
   const effective = settings.innerRing ? { ...settings, dimension: settings.innerRing } : settings;
   const data = categoryValuePairs(dataset, effective);
@@ -75,7 +89,8 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLeng
   const donut = settings.pieDonut;
   const showCenterTotal = settings.pieShowTotal && donut;
   const percentOnChart = settings.pieShowPercent === "chart" || settings.pieShowPercent === "both";
-  const percentInLegend = settings.pieShowPercent === "legend" || settings.pieShowPercent === "both";
+  const percentInLegend =
+    settings.pieShowPercent === "legend" || settings.pieShowPercent === "both";
   const pct = (v: number) => (total ? Math.round((v / total) * 100) : 0);
 
   const numRings = settings.outerRing ? 2 : 1;
@@ -88,11 +103,18 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLeng
   // The centre total drops to a smaller size, then loses its label, then
   // disappears, as the hole gets too narrow for the text.
   const totalFont = { size: PIE.total.valueFontSize, weight: PIE.total.fontWeight };
-  const totalValueText = truncateToWidth(nf(total), innerRadius * 2, totalFont.size, totalFont.weight);
-  const totalFits = innerRadius * 2 >= Math.max(
-    measureText(totalValueText, totalFont.size, totalFont.weight),
-    measureText("TOTAL", totalFont.size, totalFont.weight),
+  const totalValueText = truncateToWidth(
+    nf(total),
+    innerRadius * 2,
+    totalFont.size,
+    totalFont.weight,
   );
+  const totalFits =
+    innerRadius * 2 >=
+    Math.max(
+      measureText(totalValueText, totalFont.size, totalFont.weight),
+      measureText("TOTAL", totalFont.size, totalFont.weight),
+    );
   const totalValueFontSize = totalFits ? PIE.total.valueFontSize : PIE.total.valueFontSizeSm;
 
   // "Format des valeurs" + "Affichage des étiquettes"
@@ -112,25 +134,37 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLeng
   const sliceLabel = labelsHidden
     ? { show: false }
     : labelsForced || percentOnChart
-    ? {
-        show: true,
-        position: "outside" as const,
-        color: MB_COLORS.textSecondary,
-        fontFamily: FONT_FAMILY,
-        fontSize: sliceFontSize,
-        formatter: (p: any) => (labelsForced ? `${p.name} · ${valueText(p)}` : valueText(p)),
-      }
-    : showCenterTotal && totalValueText
       ? {
           show: true,
-          position: "center" as const,
-          formatter: () => (totalFits ? `{v|${totalValueText}}\n{l|TOTAL}` : `{v|${totalValueText}}`),
-          rich: {
-            v: { fontSize: totalValueFontSize, fontWeight: PIE.total.fontWeight, color: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
-            l: { fontSize: PIE.total.labelFontSize, fontWeight: PIE.total.fontWeight, color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, padding: [4, 0, 0, 0] },
-          },
+          position: "outside" as const,
+          color: MB_COLORS.textSecondary,
+          fontFamily: FONT_FAMILY,
+          fontSize: sliceFontSize,
+          formatter: (p: any) => (labelsForced ? `${p.name} · ${valueText(p)}` : valueText(p)),
         }
-      : { show: false };
+      : showCenterTotal && totalValueText
+        ? {
+            show: true,
+            position: "center" as const,
+            formatter: () =>
+              totalFits ? `{v|${totalValueText}}\n{l|TOTAL}` : `{v|${totalValueText}}`,
+            rich: {
+              v: {
+                fontSize: totalValueFontSize,
+                fontWeight: PIE.total.fontWeight,
+                color: MB_COLORS.textPrimary,
+                fontFamily: FONT_FAMILY,
+              },
+              l: {
+                fontSize: PIE.total.labelFontSize,
+                fontWeight: PIE.total.fontWeight,
+                color: MB_COLORS.textSecondary,
+                fontFamily: FONT_FAMILY,
+                padding: [4, 0, 0, 0],
+              },
+            },
+          }
+        : { show: false };
 
   return {
     tooltip: {
@@ -168,7 +202,10 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLeng
         label: sliceLabel,
         labelLine: { show: !labelsHidden && (labelsForced || percentOnChart) },
         emphasis: { label: { show: !labelsHidden } },
-        data: data.map((d, i) => ({ ...d, itemStyle: { color: settings.colors[d.name] ?? seriesColor(i) } })),
+        data: data.map((d, i) => ({
+          ...d,
+          itemStyle: { color: settings.colors[d.name] ?? seriesColor(i) },
+        })),
       },
       // "Anneau extérieur": a second ring breaking each slice down further.
       ...(outerRingSeries(dataset, settings, outerRadius) ?? []),
@@ -178,7 +215,11 @@ export function buildPieOption(dataset: Dataset, settings: VizSettings, sideLeng
 }
 
 /** Builds the optional outer ring (2nd dimension) as a nested pie series. */
-function outerRingSeries(dataset: Dataset, settings: VizSettings, outerRadius: number): any[] | null {
+function outerRingSeries(
+  dataset: Dataset,
+  settings: VizSettings,
+  outerRadius: number,
+): any[] | null {
   const outer = findColumn(dataset, settings.outerRing);
   const inner = findColumn(dataset, settings.innerRing) ?? findColumn(dataset, settings.dimension);
   const metric = resolveShape(dataset, settings).metrics[0];
@@ -206,7 +247,11 @@ function outerRingSeries(dataset: Dataset, settings: VizSettings, outerRadius: n
       label: { show: false },
       labelLine: { show: false },
       itemStyle: { borderColor: MB_COLORS.white, borderWidth: 1 },
-      data: slices.map((s, i) => ({ name: s.name, value: s.value, itemStyle: { color: seriesColor(i + 1), opacity: 0.75 } })),
+      data: slices.map((s, i) => ({
+        name: s.name,
+        value: s.value,
+        itemStyle: { color: seriesColor(i + 1), opacity: 0.75 },
+      })),
     },
   ];
 }
@@ -214,7 +259,8 @@ function outerRingSeries(dataset: Dataset, settings: VizSettings, outerRadius: n
 export function buildGaugeOption(dataset: Dataset, settings: VizSettings): EChartsOption {
   const metric = resolveShape(dataset, settings).metrics[0];
   const value = aggregateColumn(dataset, metric, settings.aggregation);
-  const ranges = settings.gaugeRanges && settings.gaugeRanges.length > 0 ? settings.gaugeRanges : null;
+  const ranges =
+    settings.gaugeRanges && settings.gaugeRanges.length > 0 ? settings.gaugeRanges : null;
 
   const min = ranges ? ranges[0].min : 0;
   const max = ranges
@@ -241,8 +287,15 @@ export function buildGaugeOption(dataset: Dataset, settings: VizSettings): EChar
         axisLine: { lineStyle: { width: 18, color: axisLineColor } },
         axisTick: { show: false },
         splitLine: { length: 10, lineStyle: { color: MB_COLORS.borderStrong } },
-        axisLabel: { color: MB_COLORS.textTertiary, fontSize: 10, distance: 14, formatter: (v: number) => fmt(Math.round(v)) },
-        pointer: ranges ? { show: true, width: 5, itemStyle: { color: MB_COLORS.textSecondary } } : { show: false },
+        axisLabel: {
+          color: MB_COLORS.textTertiary,
+          fontSize: 10,
+          distance: 14,
+          formatter: (v: number) => fmt(Math.round(v)),
+        },
+        pointer: ranges
+          ? { show: true, width: 5, itemStyle: { color: MB_COLORS.textSecondary } }
+          : { show: false },
         anchor: { show: false },
         title: { show: false },
         detail: {
@@ -264,7 +317,12 @@ export function buildGaugeOption(dataset: Dataset, settings: VizSettings): EChar
 export function buildProgressOption(dataset: Dataset, settings: VizSettings): EChartsOption {
   const metric = resolveShape(dataset, settings).metrics[0];
   const value = aggregateColumn(dataset, metric, settings.aggregation);
-  const goal = settings.goalValue && settings.goalValue > 0 ? settings.goalValue : value === 0 ? 100 : value * 1.25;
+  const goal =
+    settings.goalValue && settings.goalValue > 0
+      ? settings.goalValue
+      : value === 0
+        ? 100
+        : value * 1.25;
   const pct = Math.min(value / goal, 1);
   const color = settings.colors[metric?.name] ?? MB_COLORS.brand;
   return {
@@ -273,15 +331,38 @@ export function buildProgressOption(dataset: Dataset, settings: VizSettings): EC
     yAxis: { type: "category", data: [""], show: false },
     tooltip: { show: false },
     series: [
-      { type: "bar", stack: "p", barWidth: 26, data: [value], itemStyle: { color, borderRadius: [13, 0, 0, 13] as [number, number, number, number] }, silent: true },
-      { type: "bar", stack: "p", barWidth: 26, data: [Math.max(goal - value, 0)], itemStyle: { color: MB_COLORS.border, borderRadius: [0, 13, 13, 0] as [number, number, number, number] }, silent: true },
+      {
+        type: "bar",
+        stack: "p",
+        barWidth: 26,
+        data: [value],
+        itemStyle: { color, borderRadius: [13, 0, 0, 13] as [number, number, number, number] },
+        silent: true,
+      },
+      {
+        type: "bar",
+        stack: "p",
+        barWidth: 26,
+        data: [Math.max(goal - value, 0)],
+        itemStyle: {
+          color: MB_COLORS.border,
+          borderRadius: [0, 13, 13, 0] as [number, number, number, number],
+        },
+        silent: true,
+      },
     ],
     graphic: [
       {
         type: "text",
         left: "center",
         top: "20%",
-        style: { text: `${formatNumber(value, settings.numberFormat)} / ${formatNumber(goal, settings.numberFormat)}  (${Math.round(pct * 100)}%)`, fontSize: 16, fontWeight: 700, fill: MB_COLORS.textPrimary, fontFamily: FONT_FAMILY },
+        style: {
+          text: `${formatNumber(value, settings.numberFormat)} / ${formatNumber(goal, settings.numberFormat)}  (${Math.round(pct * 100)}%)`,
+          fontSize: 16,
+          fontWeight: 700,
+          fill: MB_COLORS.textPrimary,
+          fontFamily: FONT_FAMILY,
+        },
       },
     ],
     textStyle: { fontFamily: FONT_FAMILY },
@@ -301,7 +382,10 @@ export function buildBoxplotOption(dataset: Dataset, settings: VizSettings): ECh
   const boxes: number[][] = [];
   const outliers: [number, number][] = [];
   metrics.forEach((m, i) => {
-    const vals = dataset.rows.map((r) => Number(r[m.index])).filter((v) => !isNaN(v)).sort((a, b) => a - b);
+    const vals = dataset.rows
+      .map((r) => Number(r[m.index]))
+      .filter((v) => !isNaN(v))
+      .sort((a, b) => a - b);
     const q1 = q(vals, 0.25);
     const q3 = q(vals, 0.75);
     const iqr = q3 - q1;
@@ -325,7 +409,12 @@ export function buildBoxplotOption(dataset: Dataset, settings: VizSettings): ECh
     },
     yAxis: {
       type: "value",
-      axisLabel: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12, formatter: nf },
+      axisLabel: {
+        color: MB_COLORS.textSecondary,
+        fontFamily: FONT_FAMILY,
+        fontSize: 12,
+        formatter: nf,
+      },
       splitLine: { lineStyle: { color: MB_COLORS.gridLine, type: "dashed" } },
     },
     series: [
@@ -333,7 +422,11 @@ export function buildBoxplotOption(dataset: Dataset, settings: VizSettings): ECh
         type: "boxplot",
         data: boxes,
         // "Style des quartiles": filled box vs. outline only.
-        itemStyle: { color: isLineStyle ? "transparent" : ACCENT_COLORS[0] + "33", borderColor: MB_COLORS.brand, borderWidth: 1.5 },
+        itemStyle: {
+          color: isLineStyle ? "transparent" : ACCENT_COLORS[0] + "33",
+          borderColor: MB_COLORS.brand,
+          borderWidth: 1.5,
+        },
         emphasis: { itemStyle: { borderWidth: 2.5 } },
       },
       ...(outliers.length
@@ -353,4 +446,3 @@ export function buildBoxplotOption(dataset: Dataset, settings: VizSettings): ECh
 }
 
 // ---------------------------------------------------------------- Treemap ----
-

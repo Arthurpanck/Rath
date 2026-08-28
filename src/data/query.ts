@@ -71,7 +71,8 @@ export interface Summarize {
 }
 
 /** Temporal unit or binning strategy applied to a "Regrouper par" column. */
-export type Bucket = "day" | "week" | "month" | "quarter" | "year" | "auto" | "10" | "50" | "100" | "none";
+export type Bucket =
+  "day" | "week" | "month" | "quarter" | "year" | "auto" | "10" | "50" | "100" | "none";
 
 const DATE_BUCKETS: { value: Bucket; label: string }[] = [
   { value: "day", label: "par jour" },
@@ -222,7 +223,11 @@ export function defaultOperatorFor(col: Column | undefined): FilterOp {
 
 export function operatorLabel(op: FilterOp, col: Column | undefined): string {
   const kind = kindOf(col);
-  return OPERATORS.find((o) => o.value === op && o.kinds.includes(kind))?.label ?? OPERATORS.find((o) => o.value === op)?.label ?? op;
+  return (
+    OPERATORS.find((o) => o.value === op && o.kinds.includes(kind))?.label ??
+    OPERATORS.find((o) => o.value === op)?.label ??
+    op
+  );
 }
 
 /** Distinct values of a text column, for the checkbox picker. */
@@ -244,7 +249,8 @@ export function describeFilter(dataset: Dataset, f: Filter): string {
   const label = operatorLabel(f.operator, col);
   const arity = OPERATORS.find((o) => o.value === f.operator)?.arity ?? 1;
   if (arity === 0) return `${name} · ${label.toLowerCase()}`;
-  if (f.operator === "between" || f.operator === "date-between") return `${name} ${f.values[0]} – ${f.values[1]}`;
+  if (f.operator === "between" || f.operator === "date-between")
+    return `${name} ${f.values[0]} – ${f.values[1]}`;
   // Multi-value text selections read as "Espèce est 2 sélections".
   if (f.values.length > 1) return `${name} ${label.toLowerCase()} ${f.values.length} valeurs`;
   return `${name} ${symbolFor(f.operator, col)} ${f.values[0]}`;
@@ -431,7 +437,9 @@ export function applyFilters(dataset: Dataset, filters: Filter[]): Dataset {
     .filter((x): x is { f: Filter; col: Column } => !!x.col);
   if (active.length === 0) return dataset;
 
-  const rows = dataset.rows.filter((row) => active.every(({ f, col }) => matches(row[col.index], f, kindOf(col))));
+  const rows = dataset.rows.filter((row) =>
+    active.every(({ f, col }) => matches(row[col.index], f, kindOf(col))),
+  );
   return { cols: dataset.cols, rows };
 }
 
@@ -522,7 +530,11 @@ export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
     ...groupCols.map((c, i) => {
       const bucket = s.buckets?.[c.name];
       const suffix = bucket && kindOf(c) === "date" ? bucketSuffix(bucket) : "";
-      return { ...c, index: i, display_name: suffix ? `${c.display_name}: ${suffix}` : c.display_name };
+      return {
+        ...c,
+        index: i,
+        display_name: suffix ? `${c.display_name}: ${suffix}` : c.display_name,
+      };
     }),
     ...s.aggregations.map((a, i) => ({
       name: aggName(a),
@@ -563,7 +575,9 @@ export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
   // Bucketed groups are ranges or periods: they only read correctly in order.
   if (buckets[0]) {
     const numeric = kindOf(groupCols[0]) === "number";
-    rows.sort((a, b) => (numeric ? Number(a[0]) - Number(b[0]) : String(a[0]).localeCompare(String(b[0]))));
+    rows.sort((a, b) =>
+      numeric ? Number(a[0]) - Number(b[0]) : String(a[0]).localeCompare(String(b[0])),
+    );
   }
   accumulate(rows, s.aggregations, groupCols.length);
 
@@ -575,6 +589,10 @@ function aggName(a: Aggregation): string {
 }
 
 /** Full pipeline: filter, then summarize. */
-export function applyQuery(dataset: Dataset, filters: Filter[], summarize: Summarize | null): Dataset {
+export function applyQuery(
+  dataset: Dataset,
+  filters: Filter[],
+  summarize: Summarize | null,
+): Dataset {
   return applySummarize(applyFilters(dataset, filters), summarize);
 }

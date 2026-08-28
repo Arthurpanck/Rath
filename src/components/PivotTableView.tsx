@@ -32,8 +32,11 @@ export function PivotTableView({ dataset, settings }: { dataset: Dataset; settin
 
   if (!rowCol || !colCol || rowCol.index === colCol.index || !metric) {
     return (
-      <Text style={{ color: MB_COLORS.textTertiary, textAlign: "center", maxWidth: 380, fontSize: 14 }}>
-        Le tableau croisé nécessite deux colonnes de catégories distinctes (lignes et colonnes) et une valeur numérique.
+      <Text
+        style={{ color: MB_COLORS.textTertiary, textAlign: "center", maxWidth: 380, fontSize: 14 }}
+      >
+        Le tableau croisé nécessite deux colonnes de catégories distinctes (lignes et colonnes) et
+        une valeur numérique.
       </Text>
     );
   }
@@ -50,28 +53,55 @@ export function PivotTableView({ dataset, settings }: { dataset: Dataset; settin
     return agg(vals, settings.aggregation);
   };
   const rowTotal = (rv: string) => {
-    const vals = dataset.rows.filter((r) => String(r[rowCol.index]) === rv).map((r) => Number(r[metric.index])).filter((v) => !isNaN(v));
+    const vals = dataset.rows
+      .filter((r) => String(r[rowCol.index]) === rv)
+      .map((r) => Number(r[metric.index]))
+      .filter((v) => !isNaN(v));
     return agg(vals, settings.aggregation);
   };
   const colTotal = (cv: string) => {
-    const vals = dataset.rows.filter((r) => String(r[colCol.index]) === cv).map((r) => Number(r[metric.index])).filter((v) => !isNaN(v));
+    const vals = dataset.rows
+      .filter((r) => String(r[colCol.index]) === cv)
+      .map((r) => Number(r[metric.index]))
+      .filter((v) => !isNaN(v));
     return agg(vals, settings.aggregation);
   };
-  const grand = agg(dataset.rows.map((r) => Number(r[metric.index])).filter((v) => !isNaN(v)), settings.aggregation);
+  const grand = agg(
+    dataset.rows.map((r) => Number(r[metric.index])).filter((v) => !isNaN(v)),
+    settings.aggregation,
+  );
 
-  const th = { color: MB_COLORS.textSecondary, whiteSpace: "nowrap" as const, background: MB_COLORS.bgLight };
-  const totalStyle = { fontWeight: 700 as const, color: MB_COLORS.textPrimary, background: MB_COLORS.bgLight };
+  const th = {
+    color: MB_COLORS.textSecondary,
+    whiteSpace: "nowrap" as const,
+    background: MB_COLORS.bgLight,
+  };
+  const totalStyle = {
+    fontWeight: 700 as const,
+    color: MB_COLORS.textPrimary,
+    background: MB_COLORS.bgLight,
+  };
 
   return (
     <div style={{ width: "100%", height: "100%", overflow: "auto" }}>
-      <Table stickyHeader withColumnBorders withRowBorders highlightOnHover verticalSpacing="xs" horizontalSpacing="md" style={{ fontSize: 13 }}>
+      <Table
+        stickyHeader
+        withColumnBorders
+        withRowBorders
+        highlightOnHover
+        verticalSpacing="xs"
+        horizontalSpacing="md"
+        style={{ fontSize: 13 }}
+      >
         <Table.Thead>
           <Table.Tr>
             <Table.Th style={{ ...th, fontWeight: 700 }}>
               {rowCol.display_name} \ {colCol.display_name}
             </Table.Th>
             {colVals.map((cv) => (
-              <Table.Th key={cv} style={{ ...th, textAlign: "right" }}>{cv}</Table.Th>
+              <Table.Th key={cv} style={{ ...th, textAlign: "right" }}>
+                {cv}
+              </Table.Th>
             ))}
             <Table.Th style={{ ...th, textAlign: "right", fontWeight: 700 }}>Total</Table.Th>
           </Table.Tr>
@@ -79,9 +109,15 @@ export function PivotTableView({ dataset, settings }: { dataset: Dataset; settin
         <Table.Tbody>
           {rowVals.map((rv) => (
             <Table.Tr key={rv}>
-              <Table.Td style={{ fontWeight: 600, color: MB_COLORS.textPrimary, whiteSpace: "nowrap" }}>{rv}</Table.Td>
+              <Table.Td
+                style={{ fontWeight: 600, color: MB_COLORS.textPrimary, whiteSpace: "nowrap" }}
+              >
+                {rv}
+              </Table.Td>
               {colVals.map((cv) => (
-                <Table.Td key={cv} style={{ textAlign: "right", color: MB_COLORS.textPrimary }}>{nf(cell(rv, cv))}</Table.Td>
+                <Table.Td key={cv} style={{ textAlign: "right", color: MB_COLORS.textPrimary }}>
+                  {nf(cell(rv, cv))}
+                </Table.Td>
               ))}
               <Table.Td style={{ ...totalStyle, textAlign: "right" }}>{nf(rowTotal(rv))}</Table.Td>
             </Table.Tr>
@@ -89,7 +125,9 @@ export function PivotTableView({ dataset, settings }: { dataset: Dataset; settin
           <Table.Tr>
             <Table.Td style={totalStyle}>Total</Table.Td>
             {colVals.map((cv) => (
-              <Table.Td key={cv} style={{ ...totalStyle, textAlign: "right" }}>{nf(colTotal(cv))}</Table.Td>
+              <Table.Td key={cv} style={{ ...totalStyle, textAlign: "right" }}>
+                {nf(colTotal(cv))}
+              </Table.Td>
             ))}
             <Table.Td style={{ ...totalStyle, textAlign: "right" }}>{nf(grand)}</Table.Td>
           </Table.Tr>

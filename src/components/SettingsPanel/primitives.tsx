@@ -1,7 +1,15 @@
 // Shared building blocks for the settings panel.
 
 import { useState } from "react";
-import { Popover, SegmentedControl, Select, SimpleGrid, Stack, Text, UnstyledButton } from "@mantine/core";
+import {
+  Popover,
+  SegmentedControl,
+  Select,
+  SimpleGrid,
+  Stack,
+  Text,
+  UnstyledButton,
+} from "@mantine/core";
 import type { SegmentedControlItem } from "@mantine/core";
 import { ACCENT_COLORS, MB_COLORS } from "../../viz/options/constants";
 import type { SelectOption } from "./types";
@@ -54,15 +62,38 @@ export function FieldSelect({
 }
 
 // Metabase color affordance: a round color dot that opens a small swatch palette.
-export function ColorDot({ value, onChange, size = 18 }: { value: string; onChange: (v: string) => void; size?: number }) {
+export function ColorDot({
+  value,
+  onChange,
+  size = 18,
+}: {
+  value: string;
+  onChange: (v: string) => void;
+  size?: number;
+}) {
   const [open, setOpen] = useState(false);
   return (
-    <Popover opened={open} onChange={setOpen} position="bottom-start" withArrow shadow="md" width={160}>
+    <Popover
+      opened={open}
+      onChange={setOpen}
+      position="bottom-start"
+      withArrow
+      shadow="md"
+      width={160}
+    >
       <Popover.Target>
         <UnstyledButton
           onClick={() => setOpen((o) => !o)}
           aria-label={value}
-          style={{ width: size, height: size, borderRadius: "50%", background: value, border: "2px solid #fff", boxShadow: "0 0 0 1px rgba(0,0,0,0.15)", flexShrink: 0 }}
+          style={{
+            width: size,
+            height: size,
+            borderRadius: "50%",
+            background: value,
+            border: "2px solid #fff",
+            boxShadow: "0 0 0 1px rgba(0,0,0,0.15)",
+            flexShrink: 0,
+          }}
         />
       </Popover.Target>
       <Popover.Dropdown p="xs">
@@ -71,8 +102,21 @@ export function ColorDot({ value, onChange, size = 18 }: { value: string; onChan
             <UnstyledButton
               key={c}
               aria-label={c}
-              onClick={() => { onChange(c); setOpen(false); }}
-              style={{ width: 24, height: 24, borderRadius: "50%", background: c, outline: c.toLowerCase() === value.toLowerCase() ? `2px solid ${MB_COLORS.textPrimary}` : "none", outlineOffset: 2 }}
+              onClick={() => {
+                onChange(c);
+                setOpen(false);
+              }}
+              style={{
+                width: 24,
+                height: 24,
+                borderRadius: "50%",
+                background: c,
+                outline:
+                  c.toLowerCase() === value.toLowerCase()
+                    ? `2px solid ${MB_COLORS.textPrimary}`
+                    : "none",
+                outlineOffset: 2,
+              }}
             />
           ))}
         </SimpleGrid>

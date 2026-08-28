@@ -3,7 +3,18 @@
 // chart — the sub-dimensions Metabase shows indented under Grouping.
 
 import { useMemo, useState } from "react";
-import { ActionIcon, Anchor, Group, Menu, Popover, SimpleGrid, Stack, Text, TextInput, UnstyledButton } from "@mantine/core";
+import {
+  ActionIcon,
+  Anchor,
+  Group,
+  Menu,
+  Popover,
+  SimpleGrid,
+  Stack,
+  Text,
+  TextInput,
+  UnstyledButton,
+} from "@mantine/core";
 import type { Dataset } from "../../data/types";
 import type { VizSettings } from "../../viz/settings";
 import { ACCENT_COLORS, MB_COLORS, seriesColor } from "../../viz/options/constants";
@@ -33,7 +44,10 @@ export function TreemapGroupList({
       totals.set(key, (totals.get(key) ?? 0) + (metric ? Number(r[metric.index]) || 0 : 1));
     }
     // Long-tail columns would fill the panel with hundreds of rows.
-    return [...totals.entries()].sort((a, b) => b[1] - a[1]).slice(0, 50).map(([name]) => name);
+    return [...totals.entries()]
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 50)
+      .map(([name]) => name);
   }, [dataset, settings.dimension, settings.metrics]);
 
   const hidden: string[] = settings.hiddenValues ?? [];
@@ -58,13 +72,24 @@ export function TreemapGroupList({
       {restorable.length > 0 && (
         <Menu shadow="md" width={240} position="bottom-start" withinPortal>
           <Menu.Target>
-            <Anchor component="button" type="button" fz="sm" fw={700} style={{ color: MB_COLORS.brand, alignSelf: "flex-start" }}>
+            <Anchor
+              component="button"
+              type="button"
+              fz="sm"
+              fw={700}
+              style={{ color: MB_COLORS.brand, alignSelf: "flex-start" }}
+            >
               Ajouter une valeur
             </Anchor>
           </Menu.Target>
           <Menu.Dropdown mah={300} style={{ overflowY: "auto" }}>
             {restorable.map((v) => (
-              <Menu.Item key={v} onClick={() => onChange({ hiddenValues: hidden.filter((h) => h !== v) })}>{v}</Menu.Item>
+              <Menu.Item
+                key={v}
+                onClick={() => onChange({ hiddenValues: hidden.filter((h) => h !== v) })}
+              >
+                {v}
+              </Menu.Item>
             ))}
           </Menu.Dropdown>
         </Menu>
@@ -90,15 +115,49 @@ function TreemapGroupRow({
 }) {
   const [open, setOpen] = useState(false);
   return (
-    <Group gap={8} wrap="nowrap" style={{ border: `1px solid ${MB_COLORS.border}`, borderRadius: 8, padding: "6px 8px 6px 12px" }}>
-      <ColorDot size={20} value={color} onChange={(v) => onChange({ colors: { ...settings.colors, [value]: v } })} />
-      <Text fz="sm" fw={700} title={value} style={{ flex: 1, minWidth: 0, color: MB_COLORS.textPrimary }}>
+    <Group
+      gap={8}
+      wrap="nowrap"
+      style={{
+        border: `1px solid ${MB_COLORS.border}`,
+        borderRadius: 8,
+        padding: "6px 8px 6px 12px",
+      }}
+    >
+      <ColorDot
+        size={20}
+        value={color}
+        onChange={(v) => onChange({ colors: { ...settings.colors, [value]: v } })}
+      />
+      <Text
+        fz="sm"
+        fw={700}
+        title={value}
+        style={{ flex: 1, minWidth: 0, color: MB_COLORS.textPrimary }}
+      >
         {name ?? value}
       </Text>
-      <Popover opened={open} onChange={setOpen} position="left-start" withArrow shadow="lg" width={260} withinPortal>
+      <Popover
+        opened={open}
+        onChange={setOpen}
+        position="left-start"
+        withArrow
+        shadow="lg"
+        width={260}
+        withinPortal
+      >
         <Popover.Target>
-          <ActionIcon variant="subtle" color="gray" aria-label={`Paramètres de ${value}`} onClick={() => setOpen((o) => !o)}>
-            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor"><circle cx="4" cy="10" r="1.5" /><circle cx="10" cy="10" r="1.5" /><circle cx="16" cy="10" r="1.5" /></svg>
+          <ActionIcon
+            variant="subtle"
+            color="gray"
+            aria-label={`Paramètres de ${value}`}
+            onClick={() => setOpen((o) => !o)}
+          >
+            <svg width="16" height="16" viewBox="0 0 20 20" fill="currentColor">
+              <circle cx="4" cy="10" r="1.5" />
+              <circle cx="10" cy="10" r="1.5" />
+              <circle cx="16" cy="10" r="1.5" />
+            </svg>
           </ActionIcon>
         </Popover.Target>
         <Popover.Dropdown p="sm">
@@ -107,7 +166,14 @@ function TreemapGroupRow({
               size="sm"
               label="Nom affiché"
               value={name ?? value}
-              onChange={(e) => onChange({ series: { ...settings.series, [value]: { ...settings.series[value], name: e.currentTarget.value } } })}
+              onChange={(e) =>
+                onChange({
+                  series: {
+                    ...settings.series,
+                    [value]: { ...settings.series[value], name: e.currentTarget.value },
+                  },
+                })
+              }
             />
             <Label>Couleur</Label>
             <SimpleGrid cols={4} spacing={8}>
@@ -116,7 +182,17 @@ function TreemapGroupRow({
                   key={c}
                   aria-label={c}
                   onClick={() => onChange({ colors: { ...settings.colors, [value]: c } })}
-                  style={{ width: 24, height: 24, borderRadius: "50%", background: c, outline: c.toLowerCase() === color.toLowerCase() ? `2px solid ${MB_COLORS.textPrimary}` : "none", outlineOffset: 2 }}
+                  style={{
+                    width: 24,
+                    height: 24,
+                    borderRadius: "50%",
+                    background: c,
+                    outline:
+                      c.toLowerCase() === color.toLowerCase()
+                        ? `2px solid ${MB_COLORS.textPrimary}`
+                        : "none",
+                    outlineOffset: 2,
+                  }}
                 />
               ))}
             </SimpleGrid>
@@ -124,7 +200,14 @@ function TreemapGroupRow({
         </Popover.Dropdown>
       </Popover>
       <ActionIcon variant="subtle" color="gray" aria-label={`Retirer ${value}`} onClick={onRemove}>
-        <svg width="14" height="14" viewBox="0 0 20 20" fill="none"><path d="M5 5l10 10M15 5L5 15" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" /></svg>
+        <svg width="14" height="14" viewBox="0 0 20 20" fill="none">
+          <path
+            d="M5 5l10 10M15 5L5 15"
+            stroke="currentColor"
+            strokeWidth="1.8"
+            strokeLinecap="round"
+          />
+        </svg>
       </ActionIcon>
     </Group>
   );

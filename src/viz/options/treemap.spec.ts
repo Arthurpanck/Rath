@@ -70,7 +70,12 @@ describe("groupHeaderDetail", () => {
   });
 
   it("keeps the name but drops the value once they no longer both fit", () => {
-    const out = groupHeaderDetail({ width: 130, height: 32 }, "Département du Rhône", "1 200", "48 %");
+    const out = groupHeaderDetail(
+      { width: 130, height: 32 },
+      "Département du Rhône",
+      "1 200",
+      "48 %",
+    );
     expect(out.showText).toBe(true);
     expect(out.showValuePercent).toBe(false);
   });

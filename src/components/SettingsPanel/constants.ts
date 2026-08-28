@@ -50,4 +50,3 @@ export const DEFAULT_RANGES: GaugeRange[] = [
   { color: ACCENT_COLORS[4], label: "", min: 0.5, max: 1 },
   { color: ACCENT_COLORS[1], label: "", min: 1, max: 2 },
 ];
-

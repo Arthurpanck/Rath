@@ -300,18 +300,26 @@ export function findColumn(dataset: Dataset, name?: string): Column | undefined 
 }
 
 /** Resolve the effective dimension + metrics from settings, falling back to auto-detection. */
-export function resolveShape(dataset: Dataset, settings: VizSettings): { dimension: Column; metrics: Column[] } {
+export function resolveShape(
+  dataset: Dataset,
+  settings: VizSettings,
+): { dimension: Column; metrics: Column[] } {
   const auto = analyzeShape(dataset);
   const dimension = findColumn(dataset, settings.dimension) ?? auto.dimension;
   const chosen = (settings.metrics ?? [])
     .map((n) => findColumn(dataset, n))
     .filter((c): c is Column => !!c && c.index !== dimension.index);
-  const metrics = chosen.length > 0 ? chosen : auto.metrics.filter((m) => m.index !== dimension.index);
+  const metrics =
+    chosen.length > 0 ? chosen : auto.metrics.filter((m) => m.index !== dimension.index);
   return { dimension, metrics };
 }
 
 /** Aggregate a whole column with the chosen aggregation (single-value vizs). */
-export function aggregateColumn(dataset: Dataset, col: Column | undefined, agg: Aggregation): number {
+export function aggregateColumn(
+  dataset: Dataset,
+  col: Column | undefined,
+  agg: Aggregation,
+): number {
   if (!col) return 0;
   const raw = dataset.rows.map((r) => r[col.index]);
   if (agg === "count") return raw.length;

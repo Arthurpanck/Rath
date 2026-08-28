@@ -23,7 +23,9 @@ function csvCell(v: unknown): string {
 
 export function exportCsv(dataset: Dataset, name: string) {
   const header = dataset.cols.map((c) => csvCell(c.display_name)).join(",");
-  const body = dataset.rows.map((row) => dataset.cols.map((c) => csvCell(row[c.index])).join(",")).join("\n");
+  const body = dataset.rows
+    .map((row) => dataset.cols.map((c) => csvCell(row[c.index])).join(","))
+    .join("\n");
   const blob = new Blob([`${header}\n${body}`], { type: "text/csv;charset=utf-8" });
   const url = URL.createObjectURL(blob);
   triggerDownload(url, `${name}.csv`);

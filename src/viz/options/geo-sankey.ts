@@ -30,7 +30,9 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
   const metric = findColumn(dataset, settings.metrics?.[0]);
 
   if (!source || !target) {
-    return emptyMessage("Choisissez une source et une destination dans les paramètres du graphique.");
+    return emptyMessage(
+      "Choisissez une source et une destination dans les paramètres du graphique.",
+    );
   }
   if (source.index === target.index) {
     return emptyMessage("La source et la destination doivent être deux colonnes distinctes.");
@@ -86,7 +88,12 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
         emphasis: { focus: "adjacency" },
         nodeGap: 10,
         nodeWidth: 14,
-        label: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12, formatter: (p: any) => String(p.name).replace(/▸ | ◂/g, "") },
+        label: {
+          color: MB_COLORS.textSecondary,
+          fontFamily: FONT_FAMILY,
+          fontSize: 12,
+          formatter: (p: any) => String(p.name).replace(/▸ | ◂/g, ""),
+        },
         lineStyle: { color: "gradient", opacity: 0.35, curveness: 0.5 },
         data: nodes,
         links,
@@ -99,9 +106,24 @@ export function buildSankeyOption(dataset: Dataset, settings: VizSettings): ECha
 // ------------------------------------------------------------------- Map ----
 
 /** The Grand Lyon WFS layers bundled with the app (see src/data/geo). */
-export const MAP_REGIONS: { value: MapRegion; label: string; nameProp: string; codeProps: string[] }[] = [
-  { value: "communes", label: "Communes de la Métropole de Lyon", nameProp: "nom", codeProps: ["insee", "trigramme"] },
-  { value: "communes-arr", label: "Communes + arrondissements de Lyon", nameProp: "nom", codeProps: ["insee", "trigramme"] },
+export const MAP_REGIONS: {
+  value: MapRegion;
+  label: string;
+  nameProp: string;
+  codeProps: string[];
+}[] = [
+  {
+    value: "communes",
+    label: "Communes de la Métropole de Lyon",
+    nameProp: "nom",
+    codeProps: ["insee", "trigramme"],
+  },
+  {
+    value: "communes-arr",
+    label: "Communes + arrondissements de Lyon",
+    nameProp: "nom",
+    codeProps: ["insee", "trigramme"],
+  },
   { value: "directions", label: "Directions territoriales", nameProp: "nom", codeProps: [] },
   { value: "ctm", label: "Conférences territoriales (CTM)", nameProp: "nom", codeProps: ["code"] },
 ];
@@ -130,7 +152,9 @@ async function loadRegion(region: MapRegion): Promise<GeoJson> {
 /** Kick off loading so the chart can be rebuilt once the layer is available. */
 export function ensureRegion(region: MapRegion, onReady: () => void): boolean {
   if (loaded.has(region)) return true;
-  loadRegion(region).then(onReady).catch(() => undefined);
+  loadRegion(region)
+    .then(onReady)
+    .catch(() => undefined);
   return false;
 }
 
@@ -145,7 +169,9 @@ export function buildMapOption(dataset: Dataset, settings: VizSettings): ECharts
   const metric = findColumn(dataset, settings.metrics?.[0]) ?? getMetrics(dataset)[0];
 
   if (!location) {
-    return emptyMessage("La carte nécessite une colonne de localisation (nom de commune, code INSEE…).");
+    return emptyMessage(
+      "La carte nécessite une colonne de localisation (nom de commune, code INSEE…).",
+    );
   }
 
   // Build a lookup from every known identifier (name, INSEE, code…) to the
@@ -169,7 +195,10 @@ export function buildMapOption(dataset: Dataset, settings: VizSettings): ECharts
     if (!buckets.has(name)) buckets.set(name, []);
     buckets.get(name)!.push(isNaN(v) ? 0 : v);
   }
-  const data = [...buckets.entries()].map(([name, vals]) => ({ name, value: reduceWith(vals, settings.aggregation) }));
+  const data = [...buckets.entries()].map(([name, vals]) => ({
+    name,
+    value: reduceWith(vals, settings.aggregation),
+  }));
   const max = Math.max(1, ...data.map((d) => d.value));
 
   return {
@@ -195,7 +224,10 @@ export function buildMapOption(dataset: Dataset, settings: VizSettings): ECharts
         map: region,
         nameProperty: cfg.nameProp,
         roam: true,
-        emphasis: { label: { show: true, fontFamily: FONT_FAMILY, fontSize: 11 }, itemStyle: { areaColor: ACCENT_COLORS[4] } },
+        emphasis: {
+          label: { show: true, fontFamily: FONT_FAMILY, fontSize: 11 },
+          itemStyle: { areaColor: ACCENT_COLORS[4] },
+        },
         itemStyle: { areaColor: MB_COLORS.bgLight, borderColor: MB_COLORS.border },
         data,
       },
@@ -221,7 +253,15 @@ function emptyMessage(text: string): EChartsOption {
         type: "text",
         left: "center",
         top: "middle",
-        style: { text, fontSize: 14, fill: MB_COLORS.textTertiary, fontFamily: FONT_FAMILY, width: 360, overflow: "break", lineHeight: 20 },
+        style: {
+          text,
+          fontSize: 14,
+          fill: MB_COLORS.textTertiary,
+          fontFamily: FONT_FAMILY,
+          width: 360,
+          overflow: "break",
+          lineHeight: 20,
+        },
       },
     ],
   };

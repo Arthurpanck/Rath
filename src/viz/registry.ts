@@ -38,25 +38,121 @@ const hasDimAndMetric = (d: Dataset) => getDimensions(d).length > 0 && getMetric
 const isSingleValue = (d: Dataset) => d.rows.length === 1 && getMetrics(d).length >= 1;
 
 export const VISUALIZATIONS: VizDef[] = [
-  { id: "scalar", name: "Nombre", icon: "number", implemented: true, isSensible: (d) => getMetrics(d).length >= 1 },
-  { id: "smartscalar", name: "Tendance", icon: "smartscalar", implemented: true, isSensible: (d) => d.rows.length > 1 && hasDimAndMetric(d) },
-  { id: "progress", name: "Progression", icon: "progress", implemented: true, isSensible: isSingleValue },
+  {
+    id: "scalar",
+    name: "Nombre",
+    icon: "number",
+    implemented: true,
+    isSensible: (d) => getMetrics(d).length >= 1,
+  },
+  {
+    id: "smartscalar",
+    name: "Tendance",
+    icon: "smartscalar",
+    implemented: true,
+    isSensible: (d) => d.rows.length > 1 && hasDimAndMetric(d),
+  },
+  {
+    id: "progress",
+    name: "Progression",
+    icon: "progress",
+    implemented: true,
+    isSensible: isSingleValue,
+  },
   { id: "gauge", name: "Jauge", icon: "gauge", implemented: true, isSensible: isSingleValue },
   { id: "table", name: "Table", icon: "table", implemented: true, isSensible: () => true },
-  { id: "line", name: "Courbe", icon: "line", implemented: true, isSensible: (d) => d.rows.length > 1 && hasDimAndMetric(d) },
-  { id: "area", name: "Aire", icon: "area", implemented: true, isSensible: (d) => d.rows.length > 1 && hasDimAndMetric(d) },
+  {
+    id: "line",
+    name: "Courbe",
+    icon: "line",
+    implemented: true,
+    isSensible: (d) => d.rows.length > 1 && hasDimAndMetric(d),
+  },
+  {
+    id: "area",
+    name: "Aire",
+    icon: "area",
+    implemented: true,
+    isSensible: (d) => d.rows.length > 1 && hasDimAndMetric(d),
+  },
   { id: "bar", name: "Barres", icon: "bar", implemented: true, isSensible: hasDimAndMetric },
-  { id: "waterfall", name: "Cascade", icon: "waterfall", implemented: true, isSensible: (d) => hasDimAndMetric(d) && getMetrics(d).length === 1 },
-  { id: "combo", name: "Combiné", icon: "lineandbar", implemented: true, isSensible: (d) => getMetrics(d).length >= 2 },
-  { id: "row", name: "Barres horizontales", icon: "horizontal_bar", implemented: true, isSensible: hasDimAndMetric },
-  { id: "scatter", name: "Nuage de points", icon: "bubble", implemented: true, isSensible: (d) => getMetrics(d).length >= 2 },
-  { id: "boxplot", name: "Boîte à moustaches", icon: "boxplot", implemented: true, isSensible: (d) => getMetrics(d).length >= 1 },
-  { id: "pie", name: "Camembert", icon: "pie", implemented: true, isSensible: (d) => hasDimAndMetric(d) && d.rows.length <= 20 },
-  { id: "map", name: "Carte", icon: "pinmap", implemented: true, isSensible: (d) => hasGeoColumn(d.cols) && getMetrics(d).length >= 1 },
-  { id: "object", name: "Visualisation détaillée", icon: "document", implemented: true, isSensible: (d) => d.rows.length === 1 },
-  { id: "pivot", name: "Tableau croisé dynamique", icon: "pivot_table", implemented: true, isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1 },
-  { id: "treemap", name: "Treemap", icon: "treemap", implemented: true, isSensible: (d) => getDimensions(d).length >= 1 && getMetrics(d).length >= 1 },
-  { id: "sankey", name: "Sankey", icon: "sankey", implemented: true, isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1 },
+  {
+    id: "waterfall",
+    name: "Cascade",
+    icon: "waterfall",
+    implemented: true,
+    isSensible: (d) => hasDimAndMetric(d) && getMetrics(d).length === 1,
+  },
+  {
+    id: "combo",
+    name: "Combiné",
+    icon: "lineandbar",
+    implemented: true,
+    isSensible: (d) => getMetrics(d).length >= 2,
+  },
+  {
+    id: "row",
+    name: "Barres horizontales",
+    icon: "horizontal_bar",
+    implemented: true,
+    isSensible: hasDimAndMetric,
+  },
+  {
+    id: "scatter",
+    name: "Nuage de points",
+    icon: "bubble",
+    implemented: true,
+    isSensible: (d) => getMetrics(d).length >= 2,
+  },
+  {
+    id: "boxplot",
+    name: "Boîte à moustaches",
+    icon: "boxplot",
+    implemented: true,
+    isSensible: (d) => getMetrics(d).length >= 1,
+  },
+  {
+    id: "pie",
+    name: "Camembert",
+    icon: "pie",
+    implemented: true,
+    isSensible: (d) => hasDimAndMetric(d) && d.rows.length <= 20,
+  },
+  {
+    id: "map",
+    name: "Carte",
+    icon: "pinmap",
+    implemented: true,
+    isSensible: (d) => hasGeoColumn(d.cols) && getMetrics(d).length >= 1,
+  },
+  {
+    id: "object",
+    name: "Visualisation détaillée",
+    icon: "document",
+    implemented: true,
+    isSensible: (d) => d.rows.length === 1,
+  },
+  {
+    id: "pivot",
+    name: "Tableau croisé dynamique",
+    icon: "pivot_table",
+    implemented: true,
+    isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1,
+  },
+  {
+    id: "treemap",
+    name: "Treemap",
+    icon: "treemap",
+    implemented: true,
+    isSensible: (d) => getDimensions(d).length >= 1 && getMetrics(d).length >= 1,
+  },
+  {
+    id: "sankey",
+    name: "Sankey",
+    icon: "sankey",
+    implemented: true,
+    isSensible: (d) => getDimensions(d).length >= 2 && getMetrics(d).length >= 1,
+  },
 ];
 
 export const VIZ_BY_ID: Record<VizId, VizDef> = Object.fromEntries(
@@ -115,9 +211,12 @@ function getRecommendedVisualizations(dataset: Dataset, sensible: VizId[]): VizI
   const nonLatLongDimensionCount = dims.filter((c) => !/lat|lon|lng/i.test(c.name)).length;
   const hasDateDimension = dims.some((c) => c.base_type === "date");
 
-  if (rows.length === 1 && cols.length === 1 && metricCount === 1) return ["scalar", "gauge", "progress"];
-  if (rows.length === 1 && cols.length === 1 && metricCount === 0) return ["table", "object", "scalar"];
-  if (rows.length === 1 && cols.length > 1 && (metricCount === 0 || dimensionCount === 0)) return ["table", "object"];
+  if (rows.length === 1 && cols.length === 1 && metricCount === 1)
+    return ["scalar", "gauge", "progress"];
+  if (rows.length === 1 && cols.length === 1 && metricCount === 0)
+    return ["table", "object", "scalar"];
+  if (rows.length === 1 && cols.length > 1 && (metricCount === 0 || dimensionCount === 0))
+    return ["table", "object"];
   if (cols.length <= 1) return ["table"];
   if (metricCount === 0) return ["table", "pivot"];
 
@@ -125,9 +224,32 @@ function getRecommendedVisualizations(dataset: Dataset, sensible: VizId[]): VizI
   if (hasGeo) recommended.push("map");
 
   if (hasDateDimension) {
-    recommended.push("line", "area", "bar", "combo", "smartscalar", "row", "waterfall", "scatter", "pie", "table", "pivot");
+    recommended.push(
+      "line",
+      "area",
+      "bar",
+      "combo",
+      "smartscalar",
+      "row",
+      "waterfall",
+      "scatter",
+      "pie",
+      "table",
+      "pivot",
+    );
   } else if (nonLatLongDimensionCount > 0) {
-    recommended.push("bar", "row", "pie", "line", "area", "combo", "waterfall", "scatter", "table", "pivot");
+    recommended.push(
+      "bar",
+      "row",
+      "pie",
+      "line",
+      "area",
+      "combo",
+      "waterfall",
+      "scatter",
+      "table",
+      "pivot",
+    );
   } else if (hasGeo) {
     recommended.push("table", "pivot", "scatter");
   }
@@ -154,14 +276,20 @@ export function groupVisualizationsBySensibility(dataset: Dataset): SensibilityG
     (VIZ_BY_ID[id].isSensible(dataset) ? sensibleIds : nonsensibleIds).push(id);
   }
 
-  const recommended = [...new Set(getRecommendedVisualizations(dataset, sensibleIds))].filter((id) => sensibleIds.includes(id));
+  const recommended = [...new Set(getRecommendedVisualizations(dataset, sensibleIds))].filter(
+    (id) => sensibleIds.includes(id),
+  );
   const rest = sensibleIds.filter((id) => !recommended.includes(id));
 
   // Metabase caps the recommended group and pushes the overflow down.
   while (recommended.length > MAX_RECOMMENDED) rest.unshift(recommended.pop()!);
 
   const byId = (id: VizId) => VIZ_BY_ID[id];
-  return { recommended: recommended.map(byId), sensible: rest.map(byId), nonsensible: nonsensibleIds.map(byId) };
+  return {
+    recommended: recommended.map(byId),
+    sensible: rest.map(byId),
+    nonsensible: nonsensibleIds.map(byId),
+  };
 }
 
 /** Split for the picker: recommended on top, everything else under "Autres graphiques". */

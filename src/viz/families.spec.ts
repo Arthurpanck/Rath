@@ -95,7 +95,13 @@ describe("families", () => {
   });
 
   it("keeps the cartesian core inside every family built from it", () => {
-    for (const wider of [CARTESIAN_LIKE_VIZ, DIMENSION_VIZ, AGGREGATION_VIZ, SORTABLE_VIZ, AXIS_VIZ]) {
+    for (const wider of [
+      CARTESIAN_LIKE_VIZ,
+      DIMENSION_VIZ,
+      AGGREGATION_VIZ,
+      SORTABLE_VIZ,
+      AXIS_VIZ,
+    ]) {
       expect(wider).toEqual(expect.arrayContaining(CARTESIAN_VIZ));
     }
   });

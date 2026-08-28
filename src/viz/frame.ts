@@ -67,7 +67,8 @@ function sortCategories(
     if (numericCat) return Number(categories[a]) - Number(categories[b]);
     return String(categories[a]).localeCompare(String(categories[b]), "fr");
   };
-  const cmpVal = (a: number, b: number) => (firstSeriesValues[a] ?? 0) - (firstSeriesValues[b] ?? 0);
+  const cmpVal = (a: number, b: number) =>
+    (firstSeriesValues[a] ?? 0) - (firstSeriesValues[b] ?? 0);
   switch (sort) {
     case "dim-asc":
       return idx.sort(cmpDim);
@@ -107,9 +108,14 @@ export function buildFrame(dataset: Dataset, settings: VizSettings): Frame {
     series = breakoutValues.map((bv) => {
       const key = String(bv);
       const values = categories.map((_, ci) => {
-        const rows = rowsByCat[ci].filter((ri) => String(dataset.rows[ri][breakoutCol.index]) === key);
+        const rows = rowsByCat[ci].filter(
+          (ri) => String(dataset.rows[ri][breakoutCol.index]) === key,
+        );
         if (rows.length === 0) return null;
-        return aggregate(rows.map((ri) => dataset.rows[ri][metric.index]), agg);
+        return aggregate(
+          rows.map((ri) => dataset.rows[ri][metric.index]),
+          agg,
+        );
       });
       return { key, name: key, values };
     });
@@ -120,7 +126,10 @@ export function buildFrame(dataset: Dataset, settings: VizSettings): Frame {
       values: categories.map((_, ci) => {
         const rows = rowsByCat[ci];
         if (rows.length === 0) return null;
-        return aggregate(rows.map((ri) => dataset.rows[ri][m.index]), agg);
+        return aggregate(
+          rows.map((ri) => dataset.rows[ri][m.index]),
+          agg,
+        );
       }),
     }));
   }

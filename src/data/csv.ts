@@ -7,10 +7,14 @@ function inferType(values: unknown[]): ColumnType {
   const sample = values.filter((v) => v !== null && v !== undefined && v !== "");
   if (sample.length === 0) return "string";
 
-  const allNumbers = sample.every((v) => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))));
+  const allNumbers = sample.every(
+    (v) => typeof v === "number" || (typeof v === "string" && v.trim() !== "" && !isNaN(Number(v))),
+  );
   if (allNumbers) return "number";
 
-  const allBooleans = sample.every((v) => v === true || v === false || v === "true" || v === "false");
+  const allBooleans = sample.every(
+    (v) => v === true || v === false || v === "true" || v === "false",
+  );
   if (allBooleans) return "boolean";
 
   const allDates = sample.every((v) => typeof v === "string" && DATE_RE.test(v.trim()));

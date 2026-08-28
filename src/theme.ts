@@ -16,8 +16,30 @@ const brand: MantineColorsTuple = [
 ];
 
 // Metabase's "Filtrer" purple and "Résumer" green.
-const filter: MantineColorsTuple = ["#f3effc","#e3d9f7","#c9b6ef","#ae92e7","#9878e0","#8A64DF","#7C51D9","#6a3fc0","#5a34a4","#492a88"];
-const summarize: MantineColorsTuple = ["#eff5e9","#dceacf","#bcd6a2","#9bc274","#82b154","#689735","#5c8730","#4e7228","#3f5d20","#2f4718"];
+const filter: MantineColorsTuple = [
+  "#f3effc",
+  "#e3d9f7",
+  "#c9b6ef",
+  "#ae92e7",
+  "#9878e0",
+  "#8A64DF",
+  "#7C51D9",
+  "#6a3fc0",
+  "#5a34a4",
+  "#492a88",
+];
+const summarize: MantineColorsTuple = [
+  "#eff5e9",
+  "#dceacf",
+  "#bcd6a2",
+  "#9bc274",
+  "#82b154",
+  "#689735",
+  "#5c8730",
+  "#4e7228",
+  "#3f5d20",
+  "#2f4718",
+];
 
 export const theme = createTheme({
   primaryColor: "brand",

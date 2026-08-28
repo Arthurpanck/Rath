@@ -30,7 +30,15 @@ export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string)
   };
 
   return (
-    <Box style={{ height: "100%", display: "flex", alignItems: "center", justifyContent: "center", background: MB_COLORS.bgLight }}>
+    <Box
+      style={{
+        height: "100%",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background: MB_COLORS.bgLight,
+      }}
+    >
       <Stack align="center" gap="lg" style={{ width: 560, maxWidth: "90vw" }}>
         <Stack align="center" gap={4}>
           <Text fw={700} style={{ fontSize: 26, color: MB_COLORS.textPrimary }}>
@@ -66,7 +74,15 @@ export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string)
           }}
         >
           <div style={{ color: MB_COLORS.brand, marginBottom: 12 }}>
-            <svg width="40" height="40" viewBox="0 0 24 24" fill="none"><path d="M12 16V4m0 0L7 9m5-5l5 5M4 20h16" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" /></svg>
+            <svg width="40" height="40" viewBox="0 0 24 24" fill="none">
+              <path
+                d="M12 16V4m0 0L7 9m5-5l5 5M4 20h16"
+                stroke="currentColor"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
           </div>
           <Text fw={600} style={{ color: MB_COLORS.textPrimary }}>
             Glissez-déposez un fichier CSV
@@ -86,25 +102,43 @@ export function CsvImportScreen({ onLoad }: { onLoad: (d: Dataset, name: string)
           />
         </Box>
 
-        {error && (
-          <Text style={{ color: "#EF8C8C", fontSize: 13 }}>{error}</Text>
-        )}
+        {error && <Text style={{ color: "#EF8C8C", fontSize: 13 }}>{error}</Text>}
 
         <Group gap="xs" justify="center">
           <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>Pas de fichier ?</Text>
-          <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_CSV, "Exemple — commandes par année")}>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            color="brand"
+            onClick={() => handleText(SAMPLE_CSV, "Exemple — commandes par année")}
+          >
             Commandes par année
           </Button>
           <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>·</Text>
-          <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_DATES_CSV, "Exemple — trafic mensuel")}>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            color="brand"
+            onClick={() => handleText(SAMPLE_DATES_CSV, "Exemple — trafic mensuel")}
+          >
             Série temporelle (dates)
           </Button>
           <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>·</Text>
-          <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_MULTI_CSV, "Exemple — ventes par pays et catégorie")}>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            color="brand"
+            onClick={() => handleText(SAMPLE_MULTI_CSV, "Exemple — ventes par pays et catégorie")}
+          >
             Pays × catégorie
           </Button>
           <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13 }}>·</Text>
-          <Button variant="subtle" size="compact-sm" color="brand" onClick={() => handleText(SAMPLE_LYON_CSV, "Exemple — communes du Grand Lyon")}>
+          <Button
+            variant="subtle"
+            size="compact-sm"
+            color="brand"
+            onClick={() => handleText(SAMPLE_LYON_CSV, "Exemple — communes du Grand Lyon")}
+          >
             Communes du Grand Lyon
           </Button>
         </Group>

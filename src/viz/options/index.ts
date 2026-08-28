@@ -39,7 +39,12 @@ export function isEChartsViz(id: VizId): boolean {
  *   they have use it: the pie for its radii and fonts, the cartesian family to
  *   decide whether x labels fit horizontally, rotated, or not at all.
  */
-export function buildEChartsOption(id: VizId, dataset: Dataset, settings: VizSettings, size?: { width: number; height: number }): EChartsOption {
+export function buildEChartsOption(
+  id: VizId,
+  dataset: Dataset,
+  settings: VizSettings,
+  size?: { width: number; height: number },
+): EChartsOption {
   switch (id) {
     case "bar":
     case "line":

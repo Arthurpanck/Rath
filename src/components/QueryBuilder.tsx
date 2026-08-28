@@ -37,7 +37,10 @@ export function QueryBuilder({
   // Metabase shows the active filters in a bar under the header, toggled by
   // the counter attached to the "Filtre" button.
   const [filterBarOpen, setFilterBarOpen] = useState(true);
-  const dataset = useMemo(() => applyQuery(rawDataset, filters, summarize), [rawDataset, filters, summarize]);
+  const dataset = useMemo(
+    () => applyQuery(rawDataset, filters, summarize),
+    [rawDataset, filters, summarize],
+  );
 
   const [selected, setSelected] = useState<VizId>(() => defaultDisplay(dataset, null));
   // Set when the user picks a chart by hand (Metabase's displayIsLocked).
@@ -98,12 +101,24 @@ export function QueryBuilder({
   }, [renderStart]);
 
   return (
-    <Box style={{ height: "100vh", display: "flex", flexDirection: "column", background: MB_COLORS.white }}>
+    <Box
+      style={{
+        height: "100vh",
+        display: "flex",
+        flexDirection: "column",
+        background: MB_COLORS.white,
+      }}
+    >
       {/* Top bar */}
       <Group
         justify="space-between"
         wrap="nowrap"
-        style={{ padding: "10px 16px", borderBottom: `1px solid ${MB_COLORS.border}`, height: 52, flexShrink: 0 }}
+        style={{
+          padding: "10px 16px",
+          borderBottom: `1px solid ${MB_COLORS.border}`,
+          height: 52,
+          flexShrink: 0,
+        }}
       >
         {/* The title shrinks and ellipsises so a long file name never pushes
             the actions onto a second row. */}
@@ -111,11 +126,25 @@ export function QueryBuilder({
           <Text
             fw={700}
             title={datasetName}
-            style={{ color: MB_COLORS.textPrimary, fontSize: 16, whiteSpace: "nowrap", overflow: "hidden", textOverflow: "ellipsis", minWidth: 0 }}
+            style={{
+              color: MB_COLORS.textPrimary,
+              fontSize: 16,
+              whiteSpace: "nowrap",
+              overflow: "hidden",
+              textOverflow: "ellipsis",
+              minWidth: 0,
+            }}
           >
             {datasetName}
           </Text>
-          <Text style={{ color: MB_COLORS.textTertiary, fontSize: 13, whiteSpace: "nowrap", flexShrink: 0 }}>
+          <Text
+            style={{
+              color: MB_COLORS.textTertiary,
+              fontSize: 13,
+              whiteSpace: "nowrap",
+              flexShrink: 0,
+            }}
+          >
             {dataset.cols.length} colonnes · {dataset.rows.length} lignes
           </Text>
         </Group>
@@ -129,7 +158,10 @@ export function QueryBuilder({
             chipsVisible={filterBarOpen}
             onToggleChips={() => setFilterBarOpen((o) => !o)}
           />
-          <SummarizeButton active={summarizeOpen || summarize.aggregations.length > 0} onClick={() => openSummarize(!summarizeOpen)} />
+          <SummarizeButton
+            active={summarizeOpen || summarize.aggregations.length > 0}
+            onClick={() => openSummarize(!summarizeOpen)}
+          />
           <Button size="sm" variant="default" onClick={onReset}>
             Importer un autre CSV
           </Button>
@@ -221,12 +253,21 @@ export function QueryBuilder({
             settingsOpen={sidebar === "settings"}
             elapsedMs={elapsed}
             onExport={handleExport}
-            canExportImage={mode === "chart" && !["table", "object", "scalar", "smartscalar", "pivot"].includes(effectiveViz)}
+            canExportImage={
+              mode === "chart" &&
+              !["table", "object", "scalar", "smartscalar", "pivot"].includes(effectiveViz)
+            }
           />
         </Box>
 
         {summarizeOpen && (
-          <SummarizeSidebar dataset={rawDataset} summarize={summarize} onChange={setSummarize} onDone={() => openSummarize(false)} sourceName={datasetName} />
+          <SummarizeSidebar
+            dataset={rawDataset}
+            summarize={summarize}
+            onChange={setSummarize}
+            onDone={() => openSummarize(false)}
+            sourceName={datasetName}
+          />
         )}
       </Box>
     </Box>

@@ -12,7 +12,8 @@ import { VIZ_BY_ID, groupVisualizationsBySensibility } from "./registry";
 const GEO_NAME = /(commune|arrondissement|insee|territoire|\bctm\b|quartier|ville)/i;
 
 const isTemporal = (c: Column) => c.base_type === "date";
-const isGeo = (c: Column) => c.base_type === "string" && GEO_NAME.test(`${c.name} ${c.display_name}`);
+const isGeo = (c: Column) =>
+  c.base_type === "string" && GEO_NAME.test(`${c.name} ${c.display_name}`);
 
 /**
  * Metabase's default-display decision table, driven by the query shape

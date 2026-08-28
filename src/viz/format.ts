@@ -1,7 +1,10 @@
 import type { NumberFormat, SeparatorStyle, SeriesFormat } from "./settings";
 
 // Shared default: plain numbers show at most 2 decimals (like Metabase).
-export const nf2 = (v: number): string => (v == null || isNaN(v) ? "" : new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(v));
+export const nf2 = (v: number): string =>
+  v == null || isNaN(v)
+    ? ""
+    : new Intl.NumberFormat("fr-FR", { maximumFractionDigits: 2 }).format(v);
 
 // "Style de séparateur": each option maps to a locale (+ grouping toggle).
 const SEP_LOCALE: Record<SeparatorStyle, { locale: string; grouping: boolean }> = {
@@ -31,7 +34,9 @@ export function formatNumber(value: number, fmt: NumberFormat): string {
   const decimals = fmt.decimals ?? undefined;
   // When no explicit decimal count is set, cap at 2 decimals by default.
   const fracOpts =
-    decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : { maximumFractionDigits: 2 };
+    decimals != null
+      ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+      : { maximumFractionDigits: 2 };
   const base = { useGrouping: grouping, ...fracOpts } as Intl.NumberFormatOptions;
 
   let core: string;
@@ -48,7 +53,12 @@ export function formatNumber(value: number, fmt: NumberFormat): string {
           : new Intl.NumberFormat(locale, {
               style: "currency",
               currency: fmt.currency || "EUR",
-              currencyDisplay: fmt.currencyStyle === "code" ? "code" : fmt.currencyStyle === "name" ? "name" : "symbol",
+              currencyDisplay:
+                fmt.currencyStyle === "code"
+                  ? "code"
+                  : fmt.currencyStyle === "name"
+                    ? "name"
+                    : "symbol",
               ...base,
             }).format(v);
       break;
@@ -62,21 +72,32 @@ export function formatNumber(value: number, fmt: NumberFormat): string {
 }
 
 /** Per-series formatting from the popover's "Mise en forme" tab. */
-export function formatSeriesValue(value: number, f: SeriesFormat | undefined, compact = false): string {
+export function formatSeriesValue(
+  value: number,
+  f: SeriesFormat | undefined,
+  compact = false,
+): string {
   if (value == null || isNaN(value)) return "";
   let v = value;
   if (f?.multiplyBy != null && f.multiplyBy !== 0) v *= f.multiplyBy;
   const decimals = f?.decimals ?? null;
   const core = compact
     ? formatCompact(v)
-    : new Intl.NumberFormat("fr-FR", decimals != null ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals } : { maximumFractionDigits: 2 }).format(v);
+    : new Intl.NumberFormat(
+        "fr-FR",
+        decimals != null
+          ? { minimumFractionDigits: decimals, maximumFractionDigits: decimals }
+          : { maximumFractionDigits: 2 },
+      ).format(v);
   return `${f?.prefix ?? ""}${core}${f?.suffix ?? ""}`;
 }
 
 // Compact (1,2 k / 3,4 M) vs full formatting for chart data labels.
 export function formatCompact(value: number): string {
   if (value == null || isNaN(value)) return "";
-  return new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(value);
+  return new Intl.NumberFormat("fr-FR", { notation: "compact", maximumFractionDigits: 1 }).format(
+    value,
+  );
 }
 
 export const CURRENCIES: { value: string; label: string }[] = [
@@ -90,16 +111,24 @@ export const CURRENCIES: { value: string; label: string }[] = [
 ];
 
 /** First matching conditional-colour rule for a value, if any. */
-export function matchColorRule(value: number, rules: { operator: string; value: number; color: string }[]): string | undefined {
+export function matchColorRule(
+  value: number,
+  rules: { operator: string; value: number; color: string }[],
+): string | undefined {
   for (const r of rules) {
     const v = Number(r.value);
     const ok =
-      r.operator === ">" ? value > v
-      : r.operator === ">=" ? value >= v
-      : r.operator === "<" ? value < v
-      : r.operator === "<=" ? value <= v
-      : r.operator === "=" ? value === v
-      : value !== v;
+      r.operator === ">"
+        ? value > v
+        : r.operator === ">="
+          ? value >= v
+          : r.operator === "<"
+            ? value < v
+            : r.operator === "<="
+              ? value <= v
+              : r.operator === "="
+                ? value === v
+                : value !== v;
     if (ok) return r.color;
   }
   return undefined;

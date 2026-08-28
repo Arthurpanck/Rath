@@ -15,9 +15,11 @@ export type CartesianKind = "bar" | "line" | "area" | "combo" | "row" | "scatter
 const nf = (v: number) => nf2(v);
 const pctf = (v: number) => (v == null ? "" : `${Math.round(v)} %`);
 
-const colorFor = (settings: VizSettings, key: string, i: number): string => settings.colors[key] ?? seriesColor(i);
+const colorFor = (settings: VizSettings, key: string, i: number): string =>
+  settings.colors[key] ?? seriesColor(i);
 // Data-label number formatting per "Mise en forme automatique" (Auto/Compact/Complet).
-const labelNum = (settings: VizSettings, v: number) => (settings.labelFormatting === "compact" ? formatCompact(v) : nf(v));
+const labelNum = (settings: VizSettings, v: number) =>
+  settings.labelFormatting === "compact" ? formatCompact(v) : nf(v);
 
 function baseGrid() {
   return { left: 56, right: 24, top: 24, bottom: 48, containLabel: false };
@@ -28,16 +30,21 @@ function valueAxis(settings: VizSettings, name?: string, normalized = false) {
   const customRange = !normalized && !settings.yAutoRange;
   return {
     type: isLog ? ("log" as const) : ("value" as const),
-    name: settings.yShowTitle ? settings.yAxisTitle ?? name : undefined,
-    max: normalized ? 100 : customRange ? settings.yMax ?? undefined : undefined,
-    min: customRange ? settings.yMin ?? undefined : undefined,
+    name: settings.yShowTitle ? (settings.yAxisTitle ?? name) : undefined,
+    max: normalized ? 100 : customRange ? (settings.yMax ?? undefined) : undefined,
+    min: customRange ? (settings.yMin ?? undefined) : undefined,
     // "Ne pas commencer à zéro" → let ECharts fit the data range.
     scale: settings.unpinFromZero && !normalized && !customRange,
     splitNumber: settings.ySplitNumber ?? undefined,
     nameGap: CHART_STYLE.axisNameMargin + 24,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL_STYLE, show: settings.yAxisEnabled, formatter: normalized ? pctf : nf, margin: CHART_STYLE.axisTicksMarginY },
+    axisLabel: {
+      ...AXIS_LABEL_STYLE,
+      show: settings.yAxisEnabled,
+      formatter: normalized ? pctf : nf,
+      margin: CHART_STYLE.axisTicksMarginY,
+    },
     axisLine: { show: false },
     axisTick: { show: false },
     splitLine: { lineStyle: { color: MB_COLORS.gridLine, type: "dashed" as const } },
@@ -45,8 +52,13 @@ function valueAxis(settings: VizSettings, name?: string, normalized = false) {
 }
 
 // Least-squares linear regression over (x, y), ignoring null y.
-function linearFit(xs: number[], ys: (number | null)[]): { slope: number; intercept: number } | null {
-  const pts = xs.map((x, i) => [x, ys[i]] as [number, number | null]).filter((p) => p[1] != null) as [number, number][];
+function linearFit(
+  xs: number[],
+  ys: (number | null)[],
+): { slope: number; intercept: number } | null {
+  const pts = xs
+    .map((x, i) => [x, ys[i]] as [number, number | null])
+    .filter((p) => p[1] != null) as [number, number][];
   const n = pts.length;
   if (n < 2) return null;
   const sx = pts.reduce((s, p) => s + p[0], 0);
@@ -59,7 +71,6 @@ function linearFit(xs: number[], ys: (number | null)[]): { slope: number; interc
   const intercept = (sy - slope * sx) / n;
   return { slope, intercept };
 }
-
 
 // X-axis tick layout, transferred from Metabase's cartesian layout
 // (getAutoAxisEnabledSetting / areHorizontalXAxisTicksOverlapping): rather than
@@ -109,10 +120,14 @@ export function xTickLayout(categories: Cell[], size: ChartSize | undefined): XT
 
   if (dimensionWidth >= AXIS_FONT_SIZE * X_LABEL_ROTATE_45_THRESHOLD_FACTOR) {
     const height = maxWidth / Math.SQRT2;
-    return height / size.height < X_LABEL_HEIGHT_RATIO_THRESHOLD ? { show: true, rotate: 45, height } : hidden;
+    return height / size.height < X_LABEL_HEIGHT_RATIO_THRESHOLD
+      ? { show: true, rotate: 45, height }
+      : hidden;
   }
   if (dimensionWidth >= AXIS_FONT_SIZE * X_LABEL_ROTATE_90_THRESHOLD_FACTOR) {
-    return maxWidth / size.height < X_LABEL_HEIGHT_RATIO_THRESHOLD ? { show: true, rotate: 90, height: maxWidth } : hidden;
+    return maxWidth / size.height < X_LABEL_HEIGHT_RATIO_THRESHOLD
+      ? { show: true, rotate: 90, height: maxWidth }
+      : hidden;
   }
   return hidden;
 }
@@ -121,7 +136,7 @@ function categoryAxis(categories: Cell[], settings: VizSettings, name?: string, 
   const ticks = xTickLayout(categories, size);
   return {
     type: "category" as const,
-    name: settings.xShowTitle ? settings.xAxisTitle ?? name : undefined,
+    name: settings.xShowTitle ? (settings.xAxisTitle ?? name) : undefined,
     data: categories as (string | number)[],
     nameGap: CHART_STYLE.axisNameMargin + 10 + ticks.height,
     nameLocation: "middle" as const,
@@ -145,11 +160,16 @@ function timeAxis(timestamps: number[], settings: VizSettings, name?: string) {
   const g = pickGranularity(timestamps);
   return {
     type: "time" as const,
-    name: settings.xShowTitle ? settings.xAxisTitle ?? name : undefined,
+    name: settings.xShowTitle ? (settings.xAxisTitle ?? name) : undefined,
     nameGap: CHART_STYLE.axisNameMargin + 22,
     nameLocation: "middle" as const,
     nameTextStyle: { color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, fontSize: 12 },
-    axisLabel: { ...AXIS_LABEL_STYLE, show: settings.xAxisEnabled, margin: CHART_STYLE.axisTicksMarginX, formatter: (v: number) => formatDate(v, g) },
+    axisLabel: {
+      ...AXIS_LABEL_STYLE,
+      show: settings.xAxisEnabled,
+      margin: CHART_STYLE.axisTicksMarginX,
+      formatter: (v: number) => formatDate(v, g),
+    },
     axisTick: { show: false },
     axisLine: { lineStyle: { color: MB_COLORS.borderStrong } },
   };
@@ -174,9 +194,17 @@ function tooltipCfg(extra?: { names: string[]; rows: string[][] }): EChartsOptio
         )
         .join("");
       const rows = extra
-        ? extra.names.map((n, i) => `<div style="color:#949AAB">${n}: ${extra.rows[idx]?.[i] ?? ""}</div>`).join("")
+        ? extra.names
+            .map((n, i) => `<div style="color:#949AAB">${n}: ${extra.rows[idx]?.[i] ?? ""}</div>`)
+            .join("")
         : "";
-      return head + series + (rows ? `<div style="margin-top:4px;border-top:1px solid #EEECEC;padding-top:4px">${rows}</div>` : "");
+      return (
+        head +
+        series +
+        (rows
+          ? `<div style="margin-top:4px;border-top:1px solid #EEECEC;padding-top:4px">${rows}</div>`
+          : "")
+      );
     },
     axisPointer: { type: "line", lineStyle: { color: MB_COLORS.border, width: 1 } },
     backgroundColor: MB_COLORS.white,
@@ -200,7 +228,12 @@ function legendCfg(frame: Frame, settings: VizSettings): EChartsOption["legend"]
   };
 }
 
-function dataLabel(settings: VizSettings, normalized: boolean, position: "top" | "right" | "inside" = "top", opts?: SeriesOpts) {
+function dataLabel(
+  settings: VizSettings,
+  normalized: boolean,
+  position: "top" | "right" | "inside" = "top",
+  opts?: SeriesOpts,
+) {
   const show = settings.showValues || opts?.showValues;
   if (!show) return { show: false };
   const compact = settings.labelFormatting === "compact";
@@ -226,12 +259,22 @@ function goalMarkLine(settings: VizSettings) {
     silent: true,
     symbol: "none" as const,
     lineStyle: { color: MB_COLORS.textTertiary, type: "dashed" as const, width: 1.5 },
-    label: { formatter: `Objectif : ${nf(settings.goalValue)}`, color: MB_COLORS.textSecondary, fontFamily: FONT_FAMILY, position: "insideEndTop" as const },
+    label: {
+      formatter: `Objectif : ${nf(settings.goalValue)}`,
+      color: MB_COLORS.textSecondary,
+      fontFamily: FONT_FAMILY,
+      position: "insideEndTop" as const,
+    },
     data: [{ yAxis: settings.goalValue }],
   };
 }
 
-export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, settings: VizSettings, size?: ChartSize): EChartsOption {
+export function buildCartesianOption(
+  kind: CartesianKind,
+  dataset: Dataset,
+  settings: VizSettings,
+  size?: ChartSize,
+): EChartsOption {
   if (kind === "scatter") return buildScatter(dataset, settings);
 
   const frame = buildFrame(dataset, settings);
@@ -245,11 +288,14 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
   const normalized = settings.stacking === "normalized";
   const stacked = settings.stacking !== "none";
 
-  const rowTotals = frame.categories.map((_, ci) => frame.series.reduce((s, se) => s + (se.values[ci] ?? 0), 0));
+  const rowTotals = frame.categories.map((_, ci) =>
+    frame.series.reduce((s, se) => s + (se.values[ci] ?? 0), 0),
+  );
 
   const BAR_WIDTH: Record<string, number> = { xs: 0.35, normal: 0.8, wide: 0.95, xl: 1 };
   const LINE_WIDTH: Record<string, number> = { S: 1.5, M: 2, L: 3.5 };
-  const baseDisp = (i: number): "line" | "bar" | "area" => (kind === "combo" ? (i > 0 ? "line" : "bar") : isArea ? "area" : isLine ? "line" : "bar");
+  const baseDisp = (i: number): "line" | "bar" | "area" =>
+    kind === "combo" ? (i > 0 ? "line" : "bar") : isArea ? "area" : isLine ? "line" : "bar";
   const anyRight = frame.series.some((s) => settings.series[s.key]?.axis === "right");
 
   const series: SeriesOption[] = frame.series.map((s, i) => {
@@ -266,7 +312,12 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       const v = normalized ? (rowTotals[ci] ? (filled / rowTotals[ci]) * 100 : 0) : filled;
       return isDate ? ([frame.timestamps![ci], v] as [number, number]) : (v as number);
     });
-    const areaOpacity = o.areaOpacity === "opaque" ? 0.9 : o.areaOpacity === "transparent" ? 0.12 : CHART_STYLE.opacity.area;
+    const areaOpacity =
+      o.areaOpacity === "opaque"
+        ? 0.9
+        : o.areaOpacity === "transparent"
+          ? 0.12
+          : CHART_STYLE.opacity.area;
     const showSym = o.markers === "on" ? true : o.markers === "off" ? false : undefined;
     return {
       name: o.name ?? s.name,
@@ -282,12 +333,16 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       showSymbol: showSym,
       smooth: o.lineShape === "curved" ? 0.35 : false,
       step: o.lineShape === "stepped" ? ("end" as const) : undefined,
-      lineStyle: asLine ? { width: LINE_WIDTH[o.lineSize ?? "M"] ?? 2, color, type: o.lineDash ?? "solid" } : undefined,
+      lineStyle: asLine
+        ? { width: LINE_WIDTH[o.lineSize ?? "M"] ?? 2, color, type: o.lineDash ?? "solid" }
+        : undefined,
       areaStyle: asArea ? { color, opacity: areaOpacity } : undefined,
       // Highlight the hovered mark without washing out its neighbours.
       emphasis: {
         focus: "none" as const,
-        itemStyle: asLine ? undefined : { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)", shadowOffsetY: 1 },
+        itemStyle: asLine
+          ? undefined
+          : { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)", shadowOffsetY: 1 },
       },
       blur: { itemStyle: { opacity: 0.9 } },
       // Stacked segments label inside; otherwise above the mark.
@@ -303,7 +358,9 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       name: "Total",
       type: "bar",
       stack: "stack",
-      data: rowTotals.map((_t, ci) => (isDate ? ([frame.timestamps![ci], 0] as [number, number]) : 0)),
+      data: rowTotals.map((_t, ci) =>
+        isDate ? ([frame.timestamps![ci], 0] as [number, number]) : 0,
+      ),
       itemStyle: { color: "transparent" },
       emphasis: { itemStyle: { color: "transparent" } },
       silent: true,
@@ -347,11 +404,19 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
     });
   }
 
-  const leftAxis = valueAxis(settings, frame.series.length === 1 ? frame.series[0].name : undefined, normalized);
-  const yAxis = anyRight ? [leftAxis, { ...valueAxis(settings, undefined, normalized), position: "right" as const }] : leftAxis;
+  const leftAxis = valueAxis(
+    settings,
+    frame.series.length === 1 ? frame.series[0].name : undefined,
+    normalized,
+  );
+  const yAxis = anyRight
+    ? [leftAxis, { ...valueAxis(settings, undefined, normalized), position: "right" as const }]
+    : leftAxis;
 
   // Extra tooltip columns, resolved once per category (first matching row).
-  const tipCols = settings.tooltipColumns.map((n) => dataset.cols.find((c) => c.name === n)).filter((c): c is NonNullable<typeof c> => !!c);
+  const tipCols = settings.tooltipColumns
+    .map((n) => dataset.cols.find((c) => c.name === n))
+    .filter((c): c is NonNullable<typeof c> => !!c);
   const tipExtra = tipCols.length
     ? {
         names: tipCols.map((c) => c.display_name),
@@ -367,11 +432,15 @@ export function buildCartesianOption(kind: CartesianKind, dataset: Dataset, sett
       ...baseGrid(),
       top: frame.series.length >= 2 && settings.showLegend ? 36 : 24,
       // Rotated x labels need room, or they are clipped by the canvas.
-      bottom: baseGrid().bottom + (isDate ? 0 : Math.max(0, xTickLayout(frame.categories, size).height - AXIS_FONT_SIZE)),
+      bottom:
+        baseGrid().bottom +
+        (isDate ? 0 : Math.max(0, xTickLayout(frame.categories, size).height - AXIS_FONT_SIZE)),
     },
     tooltip: tooltipCfg(tipExtra),
     legend: legendCfg(frame, settings),
-    xAxis: isDate ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name) : categoryAxis(frame.categories, settings, frame.dimension.display_name, size),
+    xAxis: isDate
+      ? timeAxis(frame.timestamps!, settings, frame.dimension.display_name)
+      : categoryAxis(frame.categories, settings, frame.dimension.display_name, size),
     yAxis,
     series,
     textStyle: { fontFamily: FONT_FAMILY },
@@ -390,7 +459,10 @@ function buildRow(frame: Frame, settings: VizSettings): EChartsOption {
       stack: stacked ? "stack" : undefined,
       itemStyle: { color: colorFor(settings, s.key, i), borderRadius: [0, 2, 2, 0] },
       barMaxWidth: `${CHART_STYLE.series.barWidth * 100}%`,
-      emphasis: { focus: "none" as const, itemStyle: { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)" } },
+      emphasis: {
+        focus: "none" as const,
+        itemStyle: { shadowBlur: 10, shadowColor: "rgba(0,0,0,0.25)" },
+      },
       blur: { itemStyle: { opacity: 0.9 } },
       label: dataLabel(settings, false, stacked ? "inside" : "right", o),
     } as SeriesOption;
@@ -411,10 +483,14 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
   const all = resolved.length >= 2 ? resolved : getMetrics(dataset);
   const xMetric = all[0];
   const yMetric = all[1] ?? all[0];
-  const bubble = settings.bubbleField ? dataset.cols.find((c) => c.name === settings.bubbleField) : undefined;
+  const bubble = settings.bubbleField
+    ? dataset.cols.find((c) => c.name === settings.bubbleField)
+    : undefined;
 
   // Bubble size scaled from the chosen metric into a 8–40px radius range.
-  const bubbleVals = bubble ? dataset.rows.map((r) => Number(r[bubble.index])).filter((v) => !isNaN(v)) : [];
+  const bubbleVals = bubble
+    ? dataset.rows.map((r) => Number(r[bubble.index])).filter((v) => !isNaN(v))
+    : [];
   const bMin = bubbleVals.length ? Math.min(...bubbleVals) : 0;
   const bMax = bubbleVals.length ? Math.max(...bubbleVals) : 1;
   const sizeFor = (v: number) => (bMax === bMin ? 16 : 8 + ((v - bMin) / (bMax - bMin)) * 32);
@@ -435,20 +511,27 @@ function buildScatter(dataset: Dataset, settings: VizSettings): EChartsOption {
     series: [
       {
         type: "scatter",
-        symbolSize: bubble ? ((val: number[]) => sizeFor(val[2])) : 10,
+        symbolSize: bubble ? (val: number[]) => sizeFor(val[2]) : 10,
         data: data as (number | null)[][],
-        itemStyle: { color: colorFor(settings, xMetric?.name ?? "x", 0), opacity: CHART_STYLE.opacity.scatter },
-        emphasis: { focus: "none" as const, itemStyle: { opacity: 1, borderColor: "#fff", borderWidth: 1.5 } },
-        label: settings.scatterShowLabels && names.length
-          ? {
-              show: true,
-              position: "top" as const,
-              color: MB_COLORS.textSecondary,
-              fontFamily: FONT_FAMILY,
-              fontSize: 10,
-              formatter: (p: any) => names[p.dataIndex] ?? "",
-            }
-          : { show: false },
+        itemStyle: {
+          color: colorFor(settings, xMetric?.name ?? "x", 0),
+          opacity: CHART_STYLE.opacity.scatter,
+        },
+        emphasis: {
+          focus: "none" as const,
+          itemStyle: { opacity: 1, borderColor: "#fff", borderWidth: 1.5 },
+        },
+        label:
+          settings.scatterShowLabels && names.length
+            ? {
+                show: true,
+                position: "top" as const,
+                color: MB_COLORS.textSecondary,
+                fontFamily: FONT_FAMILY,
+                fontSize: 10,
+                formatter: (p: any) => names[p.dataIndex] ?? "",
+              }
+            : { show: false },
       },
     ],
     textStyle: { fontFamily: FONT_FAMILY },
@@ -485,9 +568,30 @@ function buildWaterfall(frame: Frame, settings: VizSettings, size?: ChartSize): 
   }
 
   const series: SeriesOption[] = [
-    { type: "bar", stack: "wf", itemStyle: { color: "transparent" }, emphasis: { itemStyle: { color: "transparent" } }, data: bases, silent: true },
-    { type: "bar", stack: "wf", name: "Augmentation", itemStyle: { color: settings.increaseColor, borderRadius: [2, 2, 0, 0] }, data: positives, label: dataLabel(settings, false) },
-    { type: "bar", stack: "wf", name: "Diminution", itemStyle: { color: settings.decreaseColor, borderRadius: [2, 2, 0, 0] }, data: negatives, label: dataLabel(settings, false) },
+    {
+      type: "bar",
+      stack: "wf",
+      itemStyle: { color: "transparent" },
+      emphasis: { itemStyle: { color: "transparent" } },
+      data: bases,
+      silent: true,
+    },
+    {
+      type: "bar",
+      stack: "wf",
+      name: "Augmentation",
+      itemStyle: { color: settings.increaseColor, borderRadius: [2, 2, 0, 0] },
+      data: positives,
+      label: dataLabel(settings, false),
+    },
+    {
+      type: "bar",
+      stack: "wf",
+      name: "Diminution",
+      itemStyle: { color: settings.decreaseColor, borderRadius: [2, 2, 0, 0] },
+      data: negatives,
+      label: dataLabel(settings, false),
+    },
   ];
 
   return {
