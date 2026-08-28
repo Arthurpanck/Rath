@@ -3,6 +3,7 @@
 // Metabase question's query stage.
 
 import type { Column, Dataset } from "./types";
+import { NULL_CHAR } from "./types";
 
 export type FilterOp =
   | "="
@@ -546,7 +547,7 @@ export function applySummarize(dataset: Dataset, s: Summarize | null): Dataset {
       const bucket = buckets[i];
       return bucket ? bucket(r[c.index]) : r[c.index];
     });
-    const id = key.map((k) => String(k)).join(" ");
+    const id = key.map((k) => String(k)).join(NULL_CHAR);
     if (!groups.has(id)) groups.set(id, { key, rows: [] });
     groups.get(id)!.rows.push(r);
   }

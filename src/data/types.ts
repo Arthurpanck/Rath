@@ -41,3 +41,14 @@ export function analyzeShape(dataset: Dataset): { dimension: Column; metrics: Co
   const metrics = getMetrics(dataset).filter((m) => m.index !== dimension.index);
   return { dimension, metrics };
 }
+
+/**
+ * Separator for composite keys built by joining several cell values into one
+ * string (grouping, pivoting). NUL cannot occur in CSV data, so a key can never
+ * collide with a value that happens to contain the separator.
+ *
+ * Metabase does the same, in echarts/cartesian/constants/dataset.ts. Write it as
+ * an escape, never as a literal NUL byte: a raw NUL makes the file register as
+ * binary, and grep then silently skips it.
+ */
+export const NULL_CHAR = "\0";
