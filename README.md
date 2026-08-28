@@ -18,6 +18,23 @@ npm install   # ou yarn
 npm run dev   # http://localhost:5173
 ```
 
+## Développement
+
+```bash
+npm test            # Vitest — la logique portée de Metabase (voir plus bas)
+npm run lint        # ESLint
+npm run format      # Prettier
+npm run build       # typecheck + build de production
+```
+
+Les **tests** couvrent en priorité ce qui a été transféré de Metabase, parce que
+ce sont des constantes empruntées : une mauvaise valeur ne lève aucune erreur,
+le graphique cesse simplement de ressembler à celui de Metabase. Sont couverts
+la rotation des libellés d'axe X, l'étiquetage deux passes du treemap, le
+dimensionnement du camembert, le pipeline `buildFrame` et la matrice de
+capacités. La suite est validée par mutation : modifier l'une des 14 constantes
+reprises de Metabase la fait échouer.
+
 ## Panneau de réglages (clic sur l'engrenage)
 
 Comme dans Metabase, sélectionner un type puis cliquer sur l'engrenage ouvre le
