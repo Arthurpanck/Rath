@@ -1,0 +1,339 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Tableau de bord ECharts</title>
+<script src="https://cdn.jsdelivr.net/npm/echarts@6.0.0/dist/echarts.min.js"></script>
+<script src="https://docs.getgrist.com/grist-plugin-api.js"></script>
+<style>
+:root {
+  --bg: #f7f7f5; --surface: #ffffff; --border: #e6e5e1; --border-strong: #d4d3ce;
+  --text: #1d1d1b; --text-2: #5c5b57; --muted: #8d8c86; --grid: #eeede9;
+  --accent: #16b378; --accent-soft: #e6f6ef; --sel: #2a78d6; --sel-soft: #eaf2fc;
+  --s1: #2a78d6; --s2: #eb6834; --s3: #1baf7a; --s4: #eda100; --s5: #e87ba4; --s6: #008300; --s7: #6250d6; --s8: #e34948;
+  --good: #0f8a5f; --bad: #c8382f;
+}
+body.dark {
+  --bg: #141413; --surface: #1d1d1c; --border: #2f2f2d; --border-strong: #3d3d3a;
+  --text: #f0efec; --text-2: #c3c2b7; --muted: #8f8e88; --grid: #2a2a28;
+  --accent-soft: #11382a; --sel-soft: #15283f;
+  --s1: #3987e5; --s2: #d95926; --s3: #199e70; --s4: #c98500; --s5: #d55181; --s6: #008300; --s7: #9085e9; --s8: #e66767;
+  --good: #3cc48f; --bad: #ef7d74;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; }
+body { background: var(--bg); color: var(--text); font: 13px/1.4 Inter, -apple-system, "Segoe UI", Roboto, sans-serif; }
+.app { display: flex; height: 100%; }
+.main { flex: 1; min-width: 0; overflow: auto; padding: 18px 22px 28px; }
+.head { display: flex; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+.head h1 { font-size: 20px; font-weight: 650; margin: 0; letter-spacing: -0.01em; }
+.head .sub { color: var(--muted); font-size: 12px; margin-top: 2px; }
+.head .sp { flex: 1; }
+.btn { border: 1px solid var(--border-strong); background: var(--surface); color: var(--text); border-radius: 8px; padding: 7px 12px; font: inherit; font-weight: 550; display: inline-flex; gap: 6px; align-items: center; cursor: pointer; }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.ghost { border-color: transparent; background: transparent; color: var(--text-2); }
+.filters { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; align-items: center; }
+.chip { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border: 1px solid var(--border); background: var(--surface); border-radius: 999px; color: var(--text-2); font-size: 12.5px; }
+.chip b { color: var(--text); font-weight: 600; }
+.chip.on { border-color: var(--accent); background: var(--accent-soft); }
+.chip .caret { opacity: .5; }
+.grid { display: grid; grid-template-columns: repeat(12, 1fr); grid-auto-rows: 96px; gap: 14px; position: relative; }
+.tile { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; padding: 14px 16px 10px; display: flex; flex-direction: column; min-width: 0; position: relative; }
+.tile h3 { margin: 0; font-size: 13px; font-weight: 600; color: var(--text); display: flex; align-items: center; gap: 6px; }
+.tile .desc { color: var(--muted); font-size: 11.5px; margin-top: 1px; }
+.tile .chart { flex: 1; min-height: 0; margin-top: 4px; }
+.kpi .lbl { color: var(--text-2); font-size: 12px; font-weight: 550; }
+.kpi .val { font-size: 27px; font-weight: 680; letter-spacing: -0.02em; margin-top: 2px; font-variant-numeric: tabular-nums; }
+.kpi .row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8px; }
+.kpi .delta { font-size: 12px; font-weight: 600; display: inline-flex; gap: 4px; align-items: center; }
+.kpi .delta.up { color: var(--good); } .kpi .delta.down { color: var(--bad); }
+.kpi .delta span { color: var(--muted); font-weight: 450; }
+.kpi .spark { width: 96px; height: 34px; }
+.bar { height: 6px; background: var(--grid); border-radius: 3px; margin-top: 10px; overflow: hidden; }
+.bar > i { display: block; height: 100%; background: var(--s1); border-radius: 3px; }
+table.top { width: 100%; border-collapse: collapse; font-size: 12.5px; margin-top: 8px; }
+table.top th { text-align: left; color: var(--muted); font-weight: 550; font-size: 11.5px; padding: 4px 6px; border-bottom: 1px solid var(--border); }
+table.top td { padding: 7px 6px; border-bottom: 1px solid var(--grid); }
+table.top td.num { text-align: right; font-variant-numeric: tabular-nums; }
+.pill { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 11.5px; font-weight: 550; }
+.prog { display: flex; align-items: center; gap: 6px; }
+.prog .bar { margin: 0; width: 70px; }
+/* edit mode */
+body.edit .grid::before { content: ""; position: absolute; inset: 0; background-image: linear-gradient(to right, transparent calc(100% - 1px), var(--border) 0); background-size: calc((100% + 14px) / 12) 100%; opacity: .55; pointer-events: none; }
+body.edit .tile { border-style: dashed; border-color: var(--border-strong); }
+body.edit .tile.sel { border: 2px solid var(--sel); box-shadow: 0 0 0 4px var(--sel-soft); }
+.tb { position: absolute; top: -15px; right: 12px; display: none; gap: 2px; background: var(--surface); border: 1px solid var(--border-strong); border-radius: 8px; padding: 3px; box-shadow: 0 2px 6px rgba(0,0,0,.08); }
+body.edit .tile.sel .tb { display: flex; }
+.tb span { width: 26px; height: 24px; display: grid; place-items: center; border-radius: 6px; color: var(--text-2); }
+.tb span.on { background: var(--sel-soft); color: var(--sel); }
+.drag { display: none; position: absolute; left: 50%; top: 4px; transform: translateX(-50%); width: 28px; height: 6px; border-radius: 3px; background: var(--border-strong); }
+body.edit .drag { display: block; }
+.rz { display: none; position: absolute; width: 10px; height: 10px; background: var(--surface); border: 2px solid var(--sel); border-radius: 2px; }
+body.edit .tile.sel .rz { display: block; }
+.rz.br { right: -6px; bottom: -6px; } .rz.r { right: -6px; top: 50%; margin-top: -5px; } .rz.b { bottom: -6px; left: 50%; margin-left: -5px; }
+.addbar { display: none; margin-top: 14px; border: 1.5px dashed var(--border-strong); border-radius: 12px; padding: 12px; align-items: center; gap: 10px; color: var(--text-2); }
+body.edit .addbar { display: flex; }
+.addbar .t { display: inline-flex; align-items: center; gap: 6px; padding: 6px 10px; border-radius: 8px; background: var(--surface); border: 1px solid var(--border); font-weight: 550; color: var(--text); }
+.editbar { display: none; position: sticky; top: 0; z-index: 3; margin: -18px -22px 14px; padding: 10px 22px; background: var(--sel-soft); border-bottom: 1px solid var(--border); align-items: center; gap: 10px; color: var(--sel); font-weight: 600; }
+body.edit .editbar { display: flex; }
+body.edit .head .btn { display: none; }
+/* side panel */
+.panel { display: none; width: 340px; flex: none; border-left: 1px solid var(--border); background: var(--surface); overflow: auto; }
+body.edit .panel { display: block; }
+.panel .ph { padding: 14px 16px 0; display: flex; align-items: center; gap: 8px; }
+.panel .ph b { font-size: 14px; }
+.tabs { display: flex; border-bottom: 1px solid var(--border); margin: 12px 0 0; padding: 0 8px; }
+.tabs div { padding: 8px 10px; color: var(--text-2); font-weight: 550; border-bottom: 2px solid transparent; }
+.tabs div.on { color: var(--sel); border-color: var(--sel); }
+.sec { padding: 12px 16px; border-bottom: 1px solid var(--grid); }
+.sec .lab { font-size: 11.5px; font-weight: 600; color: var(--text-2); margin-bottom: 6px; text-transform: none; }
+.sel-in { border: 1px solid var(--border-strong); border-radius: 8px; padding: 7px 10px; display: flex; justify-content: space-between; align-items: center; background: var(--surface); }
+.sel-in .caret { color: var(--muted); }
+.types { display: grid; grid-template-columns: repeat(6, 1fr); gap: 6px; }
+.types div { height: 38px; border: 1px solid var(--border); border-radius: 8px; display: grid; place-items: center; color: var(--text-2); }
+.types div.on { border-color: var(--sel); background: var(--sel-soft); color: var(--sel); }
+.series { display: flex; flex-direction: column; gap: 6px; }
+.serie { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 8px; padding: 6px 8px; }
+.serie .dot { width: 12px; height: 12px; border-radius: 50%; }
+.serie .agg { margin-left: auto; color: var(--muted); font-size: 12px; }
+.seg { display: flex; background: var(--bg); border-radius: 8px; padding: 3px; gap: 2px; }
+.seg div { flex: 1; text-align: center; padding: 5px 0; border-radius: 6px; color: var(--text-2); font-weight: 550; font-size: 12px; }
+.seg div.on { background: var(--surface); color: var(--text); box-shadow: 0 1px 2px rgba(0,0,0,.1); }
+.tog { display: flex; align-items: center; justify-content: space-between; padding: 4px 0; }
+.sw { width: 30px; height: 17px; border-radius: 9px; background: var(--border-strong); position: relative; }
+.sw::after { content: ""; position: absolute; top: 2px; left: 2px; width: 13px; height: 13px; border-radius: 50%; background: #fff; }
+.sw.on { background: var(--sel); } .sw.on::after { left: 15px; }
+.link { color: var(--sel); font-weight: 550; }
+/* picker modal */
+.modal { display: none; position: fixed; inset: 0; background: rgba(20,20,18,.38); z-index: 10; align-items: center; justify-content: center; }
+body.picker .modal { display: flex; }
+.mbox { width: 860px; max-width: calc(100% - 32px); background: var(--surface); border-radius: 14px; box-shadow: 0 20px 50px rgba(0,0,0,.25); padding: 20px 22px; }
+.mbox h2 { margin: 0 0 4px; font-size: 17px; }
+.mbox .msub { color: var(--muted); margin-bottom: 14px; }
+.mcat { font-size: 11.5px; font-weight: 650; color: var(--text-2); letter-spacing: .04em; text-transform: uppercase; margin: 12px 0 8px; }
+.mgrid { display: grid; grid-template-columns: repeat(6, 1fr); gap: 8px; }
+.mt { border: 1px solid var(--border); border-radius: 10px; padding: 10px 8px 8px; text-align: center; color: var(--text-2); font-weight: 550; font-size: 12px; position: relative; }
+.mt svg { display: block; margin: 0 auto 6px; color: var(--s1); }
+.mt.rec { border-color: var(--accent); background: var(--accent-soft); }
+.mt.rec::after { content: "Suggéré"; position: absolute; top: -8px; right: 6px; background: var(--accent); color: #fff; font-size: 10px; padding: 1px 6px; border-radius: 6px; }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="main">
+    <div class="editbar">✎ Mode édition — glissez les tuiles, redimensionnez-les par les poignées, cliquez pour paramétrer <span style="flex:1"></span><span class="btn ghost">Annuler</span><span class="btn primary">Enregistrer</span></div>
+    <div class="head">
+      <div><h1 id="title">Pilotage des projets</h1><div class="sub">Source : tables <b>Projets</b> et <b>Demandes</b> · mis à jour en temps réel</div></div>
+      <div class="sp"></div>
+      <span class="btn ghost">⤓ Exporter</span><span class="btn ghost">⛶ Plein écran</span><span class="btn">✎ Modifier</span>
+    </div>
+    <div class="filters">
+      <span class="chip on">📅 Période : <b>Jan 2025 – Juin 2026</b> <span class="caret">▾</span></span>
+      <span class="chip">Direction : <b>Toutes</b> <span class="caret">▾</span></span>
+      <span class="chip">Statut : <b>Tous</b> <span class="caret">▾</span></span>
+      <span class="chip">Priorité : <b>Toutes</b> <span class="caret">▾</span></span>
+      <span class="chip" style="border-style:dashed">＋ Filtre</span>
+    </div>
+    <div class="grid" id="grid">
+      <div class="tile kpi" style="grid-column: span 3; grid-row: span 1"><div class="drag"></div><div class="lbl">Budget engagé</div><div class="row"><div class="val" id="k1">–</div><div id="sp1" class="spark"></div></div><div class="delta up" id="d1"></div></div>
+      <div class="tile kpi" style="grid-column: span 3; grid-row: span 1"><div class="drag"></div><div class="lbl">Consommé</div><div class="row"><div class="val" id="k2">–</div><div class="delta" id="d2" style="color:var(--text-2)"></div></div><div class="bar"><i id="b2"></i></div></div>
+      <div class="tile kpi" style="grid-column: span 3; grid-row: span 1"><div class="drag"></div><div class="lbl">Projets en cours</div><div class="row"><div class="val" id="k3">–</div><div id="sp3" class="spark"></div></div><div class="delta down" id="d3"></div></div>
+      <div class="tile kpi" style="grid-column: span 3; grid-row: span 1"><div class="drag"></div><div class="lbl">Demandes — dernier mois</div><div class="row"><div class="val" id="k4">–</div><div id="sp4" class="spark"></div></div><div class="delta up" id="d4"></div></div>
+
+      <div class="tile sel" id="t-bar" style="grid-column: span 8; grid-row: span 4"><div class="drag"></div>
+        <div class="tb"><span class="on" title="Paramètres">⚙</span><span title="Dupliquer">⧉</span><span title="Données">▦</span><span title="Supprimer">🗑</span></div>
+        <h3>Budget vs consommé par direction</h3><div class="desc">Somme en €, triée par budget décroissant · objectif 1,5 M€</div><div class="chart" id="c-bar"></div>
+        <i class="rz r"></i><i class="rz b"></i><i class="rz br"></i></div>
+      <div class="tile" style="grid-column: span 4; grid-row: span 4"><div class="drag"></div><h3>Projets par statut</h3><div class="desc">Nombre de projets</div><div class="chart" id="c-donut"></div></div>
+
+      <div class="tile" style="grid-column: span 7; grid-row: span 4"><div class="drag"></div><h3>Demandes mensuelles par canal</h3><div class="desc">Empilé · cliquer sur la légende pour masquer un canal</div><div class="chart" id="c-area"></div></div>
+      <div class="tile" style="grid-column: span 5; grid-row: span 4"><div class="drag"></div><h3>Top 5 projets par budget</h3><div class="desc">Avancement et statut</div><div id="top"></div></div>
+    </div>
+    <div class="addbar">＋ Ajouter une tuile : <span class="t">▮ Indicateur</span><span class="t">📊 Graphique</span><span class="t">▦ Tableau</span><span class="t">T Texte</span><span class="t">⧩ Filtre</span><span class="t">— Séparateur</span></div>
+  </div>
+
+  <aside class="panel">
+    <div class="ph"><span style="color:var(--muted)">‹</span><b>Paramètres de la tuile</b><span style="flex:1"></span><span style="color:var(--muted)">✕</span></div>
+    <div class="tabs"><div class="on">Données</div><div>Affichage</div><div>Axes</div><div>Interactions</div></div>
+    <div class="sec"><div class="lab">Type de graphique</div>
+      <div class="types">
+        <div class="on" title="Barres"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M4 16V9M10 16V4M16 16v-5"/></svg></div>
+        <div title="Lignes"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 15l5-6 4 3 5-7"/></svg></div>
+        <div title="Aire"><svg width="18" height="18" viewBox="0 0 20 20" fill="currentColor" opacity=".8"><path d="M3 16l5-6 4 3 5-7v10z"/></svg></div>
+        <div title="Donut"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="3"><circle cx="10" cy="10" r="6"/></svg></div>
+        <div title="Combiné"><svg width="18" height="18" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><path d="M5 16v-5M10 16v-8M15 16v-4"/><path d="M3 8l5-3 4 2 5-4" stroke-width="1.3"/></svg></div>
+        <div title="Plus">…</div>
+      </div></div>
+    <div class="sec"><div class="lab">Source de données</div><div class="sel-in">▦ Projets <span class="caret">▾</span></div>
+      <div style="margin-top:6px;color:var(--muted);font-size:12px">30 lignes · suit les filtres du tableau de bord <span class="sw on" style="display:inline-block;vertical-align:middle;margin-left:4px"></span></div></div>
+    <div class="sec"><div class="lab">Dimension (axe X)</div><div class="sel-in">Direction <span class="caret">▾</span></div></div>
+    <div class="sec"><div class="lab">Mesures (axe Y)</div>
+      <div class="series">
+        <div class="serie"><span style="color:var(--muted)">⋮⋮</span><span class="dot" style="background:var(--s1)"></span>Budget<span class="agg">Somme ▾</span></div>
+        <div class="serie"><span style="color:var(--muted)">⋮⋮</span><span class="dot" style="background:var(--s2)"></span>Consommé<span class="agg">Somme ▾</span></div>
+      </div><div style="margin-top:8px" class="link">＋ Ajouter une mesure</div></div>
+    <div class="sec"><div class="lab">Éclater par (2ᵉ dimension)</div><div class="sel-in" style="color:var(--muted)">Aucune <span class="caret">▾</span></div></div>
+    <div class="sec"><div class="lab">Tri et limite</div>
+      <div class="seg"><div>Données</div><div>Dimension</div><div class="on">Valeur ↓</div></div>
+      <div class="tog" style="margin-top:8px"><span>Limiter à 10 + « Autres »</span><span class="sw"></span></div></div>
+    <div class="sec"><div class="lab">Filtres propres à la tuile</div><div class="link">＋ Ajouter un filtre</div></div>
+    <div class="sec"><div class="lab">Empilement</div><div class="seg"><div class="on">Groupé</div><div>Empilé</div><div>100 %</div></div>
+      <div class="tog" style="margin-top:8px"><span>Ligne d'objectif (1 500 000)</span><span class="sw on"></span></div>
+      <div class="tog"><span>Afficher les valeurs</span><span class="sw"></span></div></div>
+  </aside>
+</div>
+
+<div class="modal"><div class="mbox">
+  <h2>Ajouter une tuile</h2><div class="msub">Choisissez une visualisation — Grist suggère les plus adaptées aux colonnes sélectionnées (Date + Numérique).</div>
+  <div id="picker"></div>
+</div></div>
+
+<script>
+const params = new URLSearchParams(location.hash.slice(1));
+for (const m of ['edit','picker','dark']) if (params.has(m)) document.body.classList.add(m);
+const css = n => getComputedStyle(document.body).getPropertyValue(n).trim();
+const S = () => ['--s1','--s2','--s3','--s4','--s5','--s6','--s7','--s8'].map(css);
+const eur = v => v >= 1e6 ? (v/1e6).toLocaleString('fr-FR',{maximumFractionDigits:2}) + ' M€' : Math.round(v/1e3).toLocaleString('fr-FR') + ' k€';
+const nf = v => Math.round(v).toLocaleString('fr-FR');
+
+// --- sample fallback (same shape as the Grist tables) ---
+function sample() {
+  let s = 42; const R = () => { s = (s * 16807) % 2147483647; return (s - 1) / 2147483646; };
+  const dirs = ['Numérique','Mobilités','Habitat','Environnement','Culture'], st = ['À lancer','En cours','En cours','En cours','Terminé','Terminé','Bloqué'];
+  const P = []; for (let i = 0; i < 30; i++) { const b = Math.round(50 + R()*450)*1000, t = st[Math.floor(R()*7)], a = t==='Terminé'?1:t==='À lancer'?0:Math.round(R()*90)/100;
+    P.push({ Nom: 'Projet ' + (i+1), Direction: dirs[i%5], Statut: t, Budget: b, Consomme: Math.round(b*(a*0.9+R()*0.2)), Avancement: a, Debut: Date.UTC(2025, Math.floor(R()*18), 1)/1000 }); }
+  const D = []; for (let m = 0; m < 18; m++) for (const c of ['Web','Téléphone','Guichet']) D.push({ Mois: Date.UTC(2025,m,1)/1000, Canal: c, Demandes: ({Web:800,'Téléphone':500,Guichet:300})[c] + ({Web:40,'Téléphone':5,Guichet:-8})[c]*m + Math.round(R()*120) });
+  return { P, D };
+}
+const rows = t => { const k = Object.keys(t).filter(k => k !== 'id' && k !== 'manualSort'); return t.id.map((_, i) => Object.fromEntries(k.map(c => [c, t[c][i]]))); };
+
+let charts = [];
+function base() {
+  return { textStyle: { fontFamily: 'Inter, -apple-system, Segoe UI, sans-serif', color: css('--text-2') }, animationDuration: 500,
+    tooltip: { backgroundColor: css('--surface'), borderColor: css('--border-strong'), textStyle: { color: css('--text'), fontSize: 12 }, extraCssText: 'border-radius:8px;box-shadow:0 4px 14px rgba(0,0,0,.12)' } };
+}
+const axisStyle = () => ({ axisLine: { show: false }, axisTick: { show: false }, axisLabel: { color: css('--muted'), fontSize: 11 }, splitLine: { lineStyle: { color: css('--grid') } } });
+
+function render({ P, D }) {
+  charts.forEach(c => c.dispose()); charts = [];
+  const mk = id => { const c = echarts.init(document.getElementById(id), null, { renderer: 'svg' }); charts.push(c); return c; };
+  const col = S();
+  const budget = P.reduce((a, r) => a + r.Budget, 0), conso = P.reduce((a, r) => a + r.Consomme, 0);
+  const enCours = P.filter(r => r.Statut === 'En cours').length;
+  const months = [...new Set(D.map(r => r.Mois))].sort((a, b) => a - b);
+  const perMonth = months.map(m => D.filter(r => r.Mois === m).reduce((a, r) => a + r.Demandes, 0));
+  document.getElementById('k1').textContent = eur(budget);
+  document.getElementById('d1').innerHTML = '▲ 8,4 % <span>vs trimestre précédent</span>';
+  document.getElementById('k2').textContent = eur(conso);
+  document.getElementById('d2').textContent = Math.round(conso / budget * 100) + ' % du budget';
+  document.getElementById('b2').style.width = Math.round(conso / budget * 100) + '%';
+  document.getElementById('k3').textContent = enCours;
+  document.getElementById('d3').innerHTML = '▼ 2 <span>vs mois précédent</span>';
+  const last = perMonth.at(-1), prev = perMonth.at(-2);
+  document.getElementById('k4').textContent = nf(last);
+  const dv = (last - prev) / prev * 100; const d4 = document.getElementById('d4');
+  d4.className = 'delta ' + (dv >= 0 ? 'up' : 'down'); d4.innerHTML = (dv >= 0 ? '▲ ' : '▼ ') + Math.abs(dv).toLocaleString('fr-FR', { maximumFractionDigits: 1 }) + ' % <span>vs mois précédent</span>';
+  const spark = (id, data, color) => mk(id).setOption({ grid: { left: 0, right: 0, top: 4, bottom: 2 }, xAxis: { type: 'category', show: false, data: data.map((_, i) => i) }, yAxis: { type: 'value', show: false, scale: true },
+    series: [{ type: 'line', data, smooth: true, symbol: 'none', lineStyle: { width: 2, color }, areaStyle: { color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [{ offset: 0, color: color + '44' }, { offset: 1, color: color + '00' }]) } }] });
+  spark('sp1', [3.1,3.4,3.3,3.9,4.2,4.6,4.9,5.4,5.9,6.2,6.8,7.1], col[0]);
+  spark('sp3', [12,13,15,14,16,17,18,17,19,18,17,15], col[0]);
+  spark('sp4', perMonth.slice(-12), col[0]);
+
+  // Bar: budget vs consommé par direction
+  const dirs = [...new Set(P.map(r => r.Direction))];
+  const agg = dirs.map(d => ({ d, b: P.filter(r => r.Direction === d).reduce((a, r) => a + r.Budget, 0), c: P.filter(r => r.Direction === d).reduce((a, r) => a + r.Consomme, 0) })).sort((a, b) => b.b - a.b);
+  mk('c-bar').setOption({ ...base(), color: [col[0], col[1]],
+    legend: { top: 0, right: 0, icon: 'circle', itemWidth: 9, itemHeight: 9, textStyle: { color: css('--text-2') } },
+    grid: { left: 4, right: 8, top: 34, bottom: 4, containLabel: true },
+    tooltip: { ...base().tooltip, trigger: 'axis', axisPointer: { type: 'shadow', shadowStyle: { color: css('--grid') + '99' } }, valueFormatter: eur },
+    xAxis: { type: 'category', data: agg.map(a => a.d), ...axisStyle(), axisLabel: { color: css('--text-2'), fontSize: 12 } },
+    yAxis: { type: 'value', ...axisStyle(), axisLabel: { color: css('--muted'), fontSize: 11, formatter: eur } },
+    series: [
+      { name: 'Budget', type: 'bar', data: agg.map(a => a.b), barMaxWidth: 34, barGap: '12%', itemStyle: { borderRadius: [4, 4, 0, 0] },
+        markLine: { symbol: 'none', silent: true, lineStyle: { color: css('--text-2'), type: [4, 4], width: 1.2 }, label: { formatter: 'Objectif 1,5 M€', color: css('--text-2'), position: 'insideEndTop', fontSize: 11 }, data: [{ yAxis: 1500000 }] } },
+      { name: 'Consommé', type: 'bar', data: agg.map(a => a.c), barMaxWidth: 34, itemStyle: { borderRadius: [4, 4, 0, 0] } }] });
+
+  // Donut: projets par statut (status colors carry meaning → icon-free but labelled)
+  const stOrder = ['En cours', 'Terminé', 'À lancer', 'Bloqué'];
+  const stCol = { 'En cours': col[0], 'Terminé': col[2], 'À lancer': css('--muted'), 'Bloqué': col[7] };
+  const stData = stOrder.map(s => ({ name: s, value: P.filter(r => r.Statut === s).length, itemStyle: { color: stCol[s] } })).filter(d => d.value);
+  mk('c-donut').setOption({ ...base(), tooltip: { ...base().tooltip, trigger: 'item', formatter: p => `${p.marker}${p.name}<br><b>${p.value}</b> projets (${p.percent.toLocaleString('fr-FR')} %)` },
+    legend: { bottom: 0, icon: 'circle', itemWidth: 9, itemHeight: 9, textStyle: { color: css('--text-2') } },
+    title: { text: String(P.length), subtext: 'projets', left: 'center', top: '35%', textStyle: { fontSize: 26, fontWeight: 700, color: css('--text') }, subtextStyle: { color: css('--muted'), fontSize: 12 }, itemGap: 2 },
+    series: [{ type: 'pie', radius: ['50%', '70%'], center: ['50%', '45%'], padAngle: 1.5, itemStyle: { borderRadius: 5, borderColor: css('--surface'), borderWidth: 2 },
+      label: { show: true, formatter: '{c}', color: css('--text'), fontWeight: 600 }, labelLine: { length: 6, length2: 6, lineStyle: { color: css('--border-strong') } }, data: stData }] });
+
+  // Area: demandes mensuelles par canal (stacked)
+  const canaux = ['Web', 'Téléphone', 'Guichet'];
+  const fmtM = ts => new Date(ts * 1000).toLocaleDateString('fr-FR', { month: 'short', year: '2-digit' });
+  mk('c-area').setOption({ ...base(), color: [col[0], col[2], col[6]],
+    legend: { top: 0, right: 0, icon: 'circle', itemWidth: 9, itemHeight: 9, textStyle: { color: css('--text-2') } },
+    grid: { left: 4, right: 12, top: 34, bottom: 4, containLabel: true },
+    tooltip: { ...base().tooltip, trigger: 'axis', axisPointer: { type: 'line', lineStyle: { color: css('--border-strong') } }, valueFormatter: nf },
+    xAxis: { type: 'category', boundaryGap: false, data: months.map(fmtM), ...axisStyle(), splitLine: { show: false } },
+    yAxis: { type: 'value', ...axisStyle(), axisLabel: { color: css('--muted'), fontSize: 11, formatter: v => nf(v) } },
+    series: canaux.map((c, i) => ({ name: c, type: 'line', stack: 't', smooth: 0.3, symbol: 'circle', symbolSize: 6, showSymbol: false, lineStyle: { width: 2 },
+      areaStyle: { opacity: 0.18 }, emphasis: { focus: 'series' }, data: months.map(m => (D.find(r => r.Mois === m && r.Canal === c) || {}).Demandes || 0) })) });
+
+  // Top 5 table
+  const pillCol = { 'En cours': ['#eaf2fc', '#1f5fae'], 'Terminé': ['#e3f6ee', '#0f7a52'], 'À lancer': ['#efefec', '#5c5b57'], 'Bloqué': ['#fcebea', '#b3322a'] };
+  const top = [...P].sort((a, b) => b.Budget - a.Budget).slice(0, 5);
+  document.getElementById('top').innerHTML = '<table class="top"><tr><th>Projet</th><th>Direction</th><th>Statut</th><th style="text-align:right">Budget</th><th>Avancement</th></tr>' +
+    top.map(r => `<tr><td><b style="font-weight:600">${r.Nom}</b></td><td>${r.Direction}</td><td><span class="pill" style="background:${pillCol[r.Statut][0]};color:${pillCol[r.Statut][1]}">${r.Statut}</span></td><td class="num">${eur(r.Budget)}</td><td><div class="prog"><div class="bar"><i style="width:${Math.round(r.Avancement * 100)}%;background:${r.Avancement === 1 ? col[2] : col[0]}"></i></div>${Math.round(r.Avancement * 100)} %</div></td></tr>`).join('') + '</table>';
+}
+
+// picker content
+const ic = {
+  num: '<text x="10" y="14" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">123</text>',
+  trend: '<text x="8" y="13" text-anchor="middle" font-size="9" font-weight="700" fill="currentColor">42</text><path d="M13 13l2-4 2 2" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+  gauge: '<path d="M3 15a7 7 0 0114 0" stroke="currentColor" stroke-width="1.8" fill="none"/><path d="M10 15l3.5-5.5" stroke="currentColor" stroke-width="1.6"/>',
+  prog: '<rect x="2" y="8" width="16" height="4" rx="2" stroke="currentColor" fill="none"/><rect x="2" y="8" width="11" height="4" rx="2" fill="currentColor"/>',
+  bar: '<path d="M4 16V9M10 16V4M16 16v-5" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+  row: '<path d="M3 5h11M3 10h14M3 15h8" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/>',
+  combo: '<path d="M5 16v-5M10 16v-8M15 16v-4" stroke="currentColor" stroke-width="2.2"/><path d="M3 8l5-3 4 2 5-4" stroke="currentColor" stroke-width="1.3" fill="none"/>',
+  water: '<path d="M3 16v-6M7 10V6M11 6v3M15 9v7" stroke="currentColor" stroke-width="2.6"/>',
+  line: '<path d="M3 15l5-6 4 3 5-7" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linejoin="round"/>',
+  area: '<path d="M3 16l5-6 4 3 5-7v10z" fill="currentColor" opacity=".8"/>',
+  donut: '<circle cx="10" cy="10" r="6" stroke="currentColor" stroke-width="3" fill="none"/>',
+  tree: '<rect x="2" y="3" width="9" height="14" fill="currentColor"/><rect x="12" y="3" width="6" height="7" fill="currentColor" opacity=".6"/><rect x="12" y="11" width="6" height="6" fill="currentColor" opacity=".35"/>',
+  funnel: '<path d="M2 4h16l-5 6v6l-6 0v-6z" fill="currentColor" opacity=".8"/>',
+  sun: '<circle cx="10" cy="10" r="3" fill="currentColor"/><circle cx="10" cy="10" r="6.5" stroke="currentColor" stroke-width="2.5" fill="none" stroke-dasharray="6 2"/>',
+  scatter: '<circle cx="5" cy="14" r="1.6" fill="currentColor"/><circle cx="9" cy="9" r="1.6" fill="currentColor"/><circle cx="13" cy="11" r="1.6" fill="currentColor"/><circle cx="16" cy="5" r="1.6" fill="currentColor"/>',
+  sankey: '<path d="M3 4c7 0 7 8 14 8M3 15c7 0 7-8 14-8" stroke="currentColor" stroke-width="2.4" fill="none"/>',
+  heat: '<rect x="3" y="3" width="4" height="4" fill="currentColor"/><rect x="8" y="3" width="4" height="4" fill="currentColor" opacity=".4"/><rect x="13" y="3" width="4" height="4" fill="currentColor" opacity=".7"/><rect x="3" y="8" width="4" height="4" fill="currentColor" opacity=".25"/><rect x="8" y="8" width="4" height="4" fill="currentColor"/><rect x="13" y="8" width="4" height="4" fill="currentColor" opacity=".5"/><rect x="3" y="13" width="4" height="4" fill="currentColor" opacity=".6"/><rect x="8" y="13" width="4" height="4" fill="currentColor" opacity=".2"/><rect x="13" y="13" width="4" height="4" fill="currentColor" opacity=".9"/>',
+  box: '<path d="M10 2v4M10 14v4" stroke="currentColor" stroke-width="1.6"/><rect x="5" y="6" width="10" height="8" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M5 10h10" stroke="currentColor" stroke-width="1.6"/>',
+  map: '<path d="M3 5l4-2 6 2 4-2v12l-4 2-6-2-4 2z" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+  table: '<rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M2 8h16M2 12.5h16M8 3v14" stroke="currentColor" stroke-width="1.2"/>',
+  pivot: '<rect x="2" y="3" width="16" height="14" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M2 8h16M7 3v14" stroke="currentColor" stroke-width="1.6"/>',
+  text: '<text x="10" y="15" text-anchor="middle" font-size="14" font-weight="700" fill="currentColor">T</text>',
+  filter: '<path d="M3 4h14l-5.5 6.5V16l-3-1.5v-4z" stroke="currentColor" stroke-width="1.6" fill="none"/>',
+  cal: '<rect x="3" y="4" width="14" height="13" rx="2" stroke="currentColor" stroke-width="1.6" fill="none"/><path d="M3 8h14" stroke="currentColor" stroke-width="1.6"/>',
+};
+const cats = [
+  ['Indicateurs', [['num','Nombre'],['trend','Tendance'],['gauge','Jauge'],['prog','Progression']]],
+  ['Comparer', [['bar','Barres'],['row','Barres horizontales'],['combo','Combiné barres + ligne'],['water','Cascade']]],
+  ['Évolution dans le temps', [['line','Courbe',1],['area','Aire',1],['cal','Calendrier (heatmap)']]],
+  ['Répartition', [['donut','Donut / secteurs'],['tree','Treemap'],['sun','Sunburst'],['funnel','Entonnoir']]],
+  ['Relations & distribution', [['scatter','Nuage / bulles'],['sankey','Sankey'],['heat','Heatmap'],['box','Boîte à moustaches'],['map','Carte choroplèthe']]],
+  ['Tableaux & contenu', [['table','Tableau'],['pivot','Tableau croisé'],['text','Texte / Markdown'],['filter','Filtre']]],
+];
+document.getElementById('picker').innerHTML = cats.map(([c, items]) => `<div class="mcat">${c}</div><div class="mgrid">` +
+  items.map(([k, l, r]) => `<div class="mt${r ? ' rec' : ''}"><svg width="28" height="28" viewBox="0 0 20 20">${ic[k]}</svg>${l}</div>`).join('') + '</div>').join('');
+
+// data loading: Grist if embedded, sample otherwise
+let loaded = false;
+async function fromGrist() {
+  try {
+    grist.ready({ requiredAccess: 'full' });
+    const [p, d] = await Promise.all([grist.docApi.fetchTable('Projets'), grist.docApi.fetchTable('Demandes')]);
+    loaded = true; render({ P: rows(p), D: rows(d) });
+    grist.onRecords(async () => { const [p2, d2] = await Promise.all([grist.docApi.fetchTable('Projets'), grist.docApi.fetchTable('Demandes')]); render({ P: rows(p2), D: rows(d2) }); });
+  } catch (e) { console.warn('Grist indisponible', e); }
+}
+if (window.parent !== window) fromGrist();
+setTimeout(() => { if (!loaded) render(sample()); }, window.parent !== window ? 2500 : 0);
+window.addEventListener('resize', () => charts.forEach(c => c.resize()));
+</script>
+</body>
+</html>
